@@ -200,6 +200,17 @@ tomli = ">=1.0.0"
 toml = ["setuptools (>=42)", "tomli (>=1.0.0)"]
 
 [[package]]
+name = "shared-ndarray2"
+version = "1.0.0.post0"
+description = "Interface for NumPy ndarray using multiprocessing SharedMemory"
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+numpy = ">=1.21.1,<2.0.0"
+
+[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -226,7 +237,7 @@ python-versions = ">=3.6"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9-3.11"
-content-hash = "59b3ffa2105f49d9ca09ab72a2a75550f83bb05be8a70e521d9bdc6acbcad791"
+content-hash = "ade51020c8c80fcba6bbb434dd9f5a18323d387d7a21269cf2971dee569b762e"
 
 [metadata.files]
 black = [
@@ -465,6 +476,10 @@ scipy = [
 setuptools-scm = [
     {file = "setuptools_scm-6.3.2-py3-none-any.whl", hash = "sha256:4c64444b1d49c4063ae60bfe1680f611c8b13833d556fd1d6050c0023162a119"},
     {file = "setuptools_scm-6.3.2.tar.gz", hash = "sha256:a49aa8081eeb3514eb9728fa5040f2eaa962d6c6f4ec9c32f6c1fba88f88a0f2"},
+]
+shared-ndarray2 = [
+    {file = "shared-ndarray2-1.0.0.post0.tar.gz", hash = "sha256:590a494cf6a75db290385590e1f6e77e82168506d90bb3ed70aed8d7d39a48e4"},
+    {file = "shared_ndarray2-1.0.0.post0-py3-none-any.whl", hash = "sha256:b3514f265485e7075c88d8cd5dbe859030e99023fce01c438bdbf8b5df2be9fe"},
 ]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
