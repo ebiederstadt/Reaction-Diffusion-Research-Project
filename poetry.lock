@@ -177,7 +177,7 @@ six = ">=1.5"
 name = "scipy"
 version = "1.7.3"
 description = "SciPy: Scientific Library for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7,<3.11"
 
@@ -226,7 +226,7 @@ python-versions = ">=3.6"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.9-3.11"
-content-hash = "0990a4b2e96a5f3e335210e4acd7b623c4344db20f6f6b15f3750821a9c94f0b"
+content-hash = "59b3ffa2105f49d9ca09ab72a2a75550f83bb05be8a70e521d9bdc6acbcad791"
 
 [metadata.files]
 black = [
