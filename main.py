@@ -1,12 +1,13 @@
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Button
-from matplotlib.transforms import Bbox
-from datetime import datetime
-from dataclasses import dataclass
-from time import perf_counter
-import numpy as np
 import multiprocessing as mp
+from dataclasses import dataclass
+from datetime import datetime
 from multiprocessing.managers import SharedMemoryManager
+from time import perf_counter
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.transforms import Bbox
+from matplotlib.widgets import Button
 from shared_ndarray2 import SharedNDArray
 
 from image_processing import save_fig
