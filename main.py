@@ -37,7 +37,6 @@ class KernelPortion:
         )
 
 
-# TODO: What is this actually doing?
 def save_figures(event):
     """Save all the figures"""
     time_stamp = datetime.timestamp(datetime.now())
