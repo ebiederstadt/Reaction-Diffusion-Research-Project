@@ -68,7 +68,7 @@ x = np.linspace(0, KERNEL_SIZE)
 simulation_matrix = np.zeros((MATRIX_SIZE ** 2))
 
 # Starting values for the kernel and the simulation matrix
-kt_matrix = np.random.rand(MATRIX_SIZE, MATRIX_SIZE)
+kt_matrix = np.random.rand(MATRIX_SIZE * MATRIX_SIZE)
 activator = KernelPortion(21, 0, 2.06)
 inhibitor = KernelPortion(-6.5, 4.25, 1.38)
 
@@ -89,7 +89,7 @@ def matrixIndex(x, y):
     return MATRIX_SIZE * y + x
 
 
-def stimulate(event):
+def simulate(event):
     global kt_matrix
     stimulation_matrix = np.zeros(MATRIX_SIZE ** 2)
 
@@ -103,7 +103,7 @@ def stimulate(event):
         i = 0
         for i in range(MATRIX_SIZE):
             xx = i + MATRIX_SIZE - KERNEL_SIZE
-            mat_value = kt_matrix[j][i]
+            mat_value = kt_matrix[index_mat]
             index_mat = index_mat + 1
             indexK = 0
             for q in range(kernel_width):
@@ -118,18 +118,17 @@ def stimulate(event):
                     indexK = indexK + 1
 
     np.clip(stimulation_matrix, MIN_STIMULATION, MAX_STIMULATION)
-    stimulation_matrix = np.reshape(stimulation_matrix, (200, 200))
     kt_matrix = kt_matrix * DECAY_RATE + stimulation_matrix
     end = perf_counter()
     print("Simulation finished")
-    print(f"Simulation took {end - start} Seconds")
+    print(f"Simulation took {end - start} seconds")
 
-    ax[0][0].imshow(kt_matrix)
+    ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
 
 
 fig, ax = plt.subplots(2, 2)
 ax[0][0].set_title("Reaction Diffusion Result")
-ax[0][0].imshow(kt_matrix)
+ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
 
 ax[0][1].set_title("Kernel (Activator + Inhibitor)")
 ax[0][1].set_xlim(0, KERNEL_SIZE)
@@ -151,6 +150,6 @@ button_save.on_clicked(save_figures)
 
 ax_compute = plt.axes([0.6, 0.4, 0.1, 0.075])
 button_compute = Button(ax_compute, "Start Calculation")
-button_compute.on_clicked(stimulate)
+button_compute.on_clicked(simulate)
 
 plt.show()
