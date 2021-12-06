@@ -5,6 +5,9 @@ from datetime import datetime
 from dataclasses import dataclass
 from time import perf_counter
 import numpy as np
+import multiprocessing as mp
+from multiprocessing.managers import SharedMemoryManager
+from shared_ndarray2 import SharedNDArray
 
 from image_processing import save_fig
 
@@ -65,7 +68,6 @@ def set_kernel_cache():
 
 
 x = np.linspace(0, KERNEL_SIZE)
-simulation_matrix = np.zeros((MATRIX_SIZE ** 2))
 
 # Starting values for the kernel and the simulation matrix
 kt_matrix = np.random.rand(MATRIX_SIZE * MATRIX_SIZE)
@@ -91,34 +93,25 @@ def matrixIndex(x, y):
 
 def simulate(event):
     global kt_matrix
-    stimulation_matrix = np.zeros(MATRIX_SIZE ** 2)
 
-    print("Starting simulation...")
-    start = perf_counter()
-    # This is just copied from knodo and could likely be optimized
-    kernel_width = KERNEL_SIZE * 2
-    index_mat = 0
-    for j in range(MATRIX_SIZE):
-        yy = j + MATRIX_SIZE - KERNEL_SIZE
-        i = 0
-        for i in range(MATRIX_SIZE):
-            xx = i + MATRIX_SIZE - KERNEL_SIZE
-            mat_value = kt_matrix[index_mat]
-            index_mat = index_mat + 1
-            indexK = 0
-            for q in range(kernel_width):
-                y = (yy + q) % MATRIX_SIZE
-                for p in range(kernel_width):
-                    x = (xx + p) % MATRIX_SIZE
-                    index = matrixIndex(x, y)
-                    # This is the core idea: we do the numerical integration at this stage, not at the other stage
-                    stimulation_matrix[index] = (
-                        stimulation_matrix[index] + kernel_cache[indexK] * mat_value
-                    )
-                    indexK = indexK + 1
+    with SharedMemoryManager() as mem_mgr:
+        print("Starting simulation...")
+        start = perf_counter()
+        stimulation_matrix = SharedNDArray.from_array(
+            mem_mgr, np.zeros(MATRIX_SIZE ** 2)
+        )
+        with mp.Pool() as pool:
+            pool.starmap(
+                compute_cell_stimulation,
+                [
+                    (j, i, stimulation_matrix)
+                    for j in range(MATRIX_SIZE)
+                    for i in range(MATRIX_SIZE)
+                ],
+            )
 
-    np.clip(stimulation_matrix, MIN_STIMULATION, MAX_STIMULATION)
-    kt_matrix = kt_matrix * DECAY_RATE + stimulation_matrix
+    np.clip(stimulation_matrix.get(), MIN_STIMULATION, MAX_STIMULATION)
+    kt_matrix = kt_matrix * DECAY_RATE + stimulation_matrix.get()
     end = perf_counter()
     print("Simulation finished")
     print(f"Simulation took {end - start} seconds")
@@ -126,30 +119,53 @@ def simulate(event):
     ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
 
 
-fig, ax = plt.subplots(2, 2)
-ax[0][0].set_title("Reaction Diffusion Result")
-ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
+def compute_cell_stimulation(j, i, stimulation_matrix: SharedNDArray) -> float:
+    """Compute the stimulation received by a single cell
 
-ax[0][1].set_title("Kernel (Activator + Inhibitor)")
-ax[0][1].set_xlim(0, KERNEL_SIZE)
-ax[0][1].grid(True)
-ax[0][1].plot(x, activator.kernel, label="Activator", linestyle="dashed")
-ax[0][1].plot(x, inhibitor.kernel, label="Inhibitor", linestyle="dashed")
-ax[0][1].plot(x, kernel, label="Kernel")
-ax[0][1].legend()
+    TODO: This does not work at the moment because the stimulation matrix needs to be shared across processes"""
 
-ax[1][0].set_title("Fourier Transform of the Kernel")
-ax[1][0].grid(True)
+    kernel_width = KERNEL_SIZE * 2
+    yy = j + MATRIX_SIZE - KERNEL_SIZE
+    xx = i + MATRIX_SIZE - KERNEL_SIZE
+    mat_value = kt_matrix[j * MATRIX_SIZE + i]
 
-ax[1][1].axis("off")
+    for q in range(kernel_width):
+        y = (yy + q) % MATRIX_SIZE
+        for p in range(kernel_width):
+            x = (xx + p) % MATRIX_SIZE
+            index = matrixIndex(x, y)
+            # This is the core idea: we do the numerical integration at this stage, not at the other stage
+            stimulation_matrix[index] = (
+                stimulation_matrix[index]
+                + kernel_cache[q * kernel_width + p] * mat_value
+            )
 
-# Interactive widgets and buttons
-ax_save = plt.axes([0.5, 0.4, 0.1, 0.075])
-button_save = Button(ax_save, "Save Figures")
-button_save.on_clicked(save_figures)
 
-ax_compute = plt.axes([0.6, 0.4, 0.1, 0.075])
-button_compute = Button(ax_compute, "Start Calculation")
-button_compute.on_clicked(simulate)
+if __name__ == "__main__":
+    fig, ax = plt.subplots(2, 2)
+    ax[0][0].set_title("Reaction Diffusion Result")
+    ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
 
-plt.show()
+    ax[0][1].set_title("Kernel (Activator + Inhibitor)")
+    ax[0][1].set_xlim(0, KERNEL_SIZE)
+    ax[0][1].grid(True)
+    ax[0][1].plot(x, activator.kernel, label="Activator", linestyle="dashed")
+    ax[0][1].plot(x, inhibitor.kernel, label="Inhibitor", linestyle="dashed")
+    ax[0][1].plot(x, kernel, label="Kernel")
+    ax[0][1].legend()
+
+    ax[1][0].set_title("Fourier Transform of the Kernel")
+    ax[1][0].grid(True)
+
+    ax[1][1].axis("off")
+
+    # Interactive widgets and buttons
+    ax_save = plt.axes([0.5, 0.4, 0.1, 0.075])
+    button_save = Button(ax_save, "Save Figures")
+    button_save.on_clicked(save_figures)
+
+    ax_compute = plt.axes([0.6, 0.4, 0.1, 0.075])
+    button_compute = Button(ax_compute, "Start Calculation")
+    button_compute.on_clicked(simulate)
+
+    plt.show()
