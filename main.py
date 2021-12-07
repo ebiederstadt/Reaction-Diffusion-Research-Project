@@ -10,7 +10,7 @@ from matplotlib.transforms import Bbox
 from matplotlib.widgets import Button
 from shared_ndarray2 import SharedNDArray
 
-from image_processing import save_fig
+from image_processing import save_fig, write_figures
 
 # Constants
 MATRIX_SIZE = 200
@@ -27,7 +27,7 @@ class KernelPortion:
     distance: float
     width: float
 
-    def __init__(self, amplitude, distance, width):
+    def __init__(self, amplitude: float, distance: float, width: float):
         self.amplitude = amplitude
         self.distance = distance
         self.width = width
@@ -83,8 +83,7 @@ set_kernel_cache()
 def save_figures(event):
     """Save all the figures"""
     time_stamp = datetime.timestamp(datetime.now())
-    save_fig(f"{time_stamp}_reaction_diffusion_result.png", fig, ax[0][0])
-    save_fig(f"{time_stamp}_kernel.png", fig, ax[0][1])
+    write_figures(kt_matrix, kernel, activator, inhibitor)
     save_fig(f"{time_stamp}_fourier_transform.png", fig, ax[1][0])
 
 
@@ -121,9 +120,7 @@ def simulate(event):
 
 
 def compute_cell_stimulation(j, i, stimulation_matrix: SharedNDArray) -> float:
-    """Compute the stimulation received by a single cell
-
-    TODO: This does not work at the moment because the stimulation matrix needs to be shared across processes"""
+    """Compute the stimulation received by a single cell"""
 
     kernel_width = KERNEL_SIZE * 2
     yy = j + MATRIX_SIZE - KERNEL_SIZE
