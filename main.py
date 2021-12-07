@@ -6,7 +6,7 @@ from time import perf_counter
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, TextBox
 from shared_ndarray2 import SharedNDArray
 
 import constants as c
@@ -24,6 +24,8 @@ inhibitor = KernelPortion(-6.5, 4.25, 1.38)
 kernel = activator.kernel + inhibitor.kernel
 kernel_cache = np.zeros((c.KERNEL_SIZE * 2 + 1) * (c.KERNEL_SIZE * 2 + 1))
 set_kernel_cache(kernel_cache, activator, inhibitor)
+
+fig, ax = plt.subplots(2, 2)
 
 
 def save_figures(event):
@@ -62,7 +64,10 @@ def simulate(event):
     print("Simulation finished")
     print(f"Simulation took {end - start} seconds")
 
-    ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
+    global fig, ax
+    ax = ax.ravel()
+    ax[0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
+    plt.draw()
 
 
 def compute_cell_stimulation(j, i, stimulation_matrix: SharedNDArray) -> float:
@@ -85,17 +90,60 @@ def compute_cell_stimulation(j, i, stimulation_matrix: SharedNDArray) -> float:
             )
 
 
+def update_activator_from_textbox(text):
+    try:
+        amplitude, width, distance = [float(x) for x in text.split(",")]
+    except ValueError:
+        print("Invalid input given to activator textbox")
+        print(text)
+        return
+
+    # Update the kernel with the new parameters
+    activator.update(amplitude, distance, width)
+    global kernel
+    kernel = activator.kernel + inhibitor.kernel
+    set_kernel_cache(kernel_cache, activator, inhibitor)
+
+    # Redraw the figure
+    global fig, ax
+    ax = ax.ravel()
+    ax[1].lines[0].set_ydata(kernel)
+    ax[1].lines[1].set_ydata(activator.kernel)
+    plt.draw()
+
+
+def update_inhibitor_from_textbox(text):
+    try:
+        amplitude, width, distance = [float(x) for x in text.split(",")]
+    except ValueError:
+        print("Invalid input given to inhibitor textbox")
+        print(text)
+        return
+
+    # Update with the new parameters
+    inhibitor.update(amplitude, distance, width)
+    global kernel
+    kernel = activator.kernel + inhibitor.kernel
+    set_kernel_cache(kernel_cache, activator, inhibitor)
+
+    # Redraw the figure
+    global fig, ax
+    ax = ax.ravel()
+    ax[1].lines[0].set_ydata(kernel)
+    ax[1].lines[2].set_ydata(inhibitor.kernel)
+    plt.draw()
+
+
 if __name__ == "__main__":
-    fig, ax = plt.subplots(2, 2)
     ax[0][0].set_title("Reaction Diffusion Result")
     ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
 
     ax[0][1].set_title("Kernel (Activator + Inhibitor)")
     ax[0][1].set_xlim(0, c.KERNEL_SIZE)
     ax[0][1].grid(True)
+    ax[0][1].plot(x, kernel, label="Kernel")
     ax[0][1].plot(x, activator.kernel, label="Activator", linestyle="dashed")
     ax[0][1].plot(x, inhibitor.kernel, label="Inhibitor", linestyle="dashed")
-    ax[0][1].plot(x, kernel, label="Kernel")
     ax[0][1].legend()
 
     ax[1][0].set_title("Fourier Transform of the Kernel")
@@ -105,7 +153,7 @@ if __name__ == "__main__":
 
     # Show the Integral of the Kernel
     integral = integrate_kernel(kernel)
-    plt.text(0, 0.2, f"{integral:.3f}")
+    plt.text(0, 0.1, f"Integrated Value of the Kernel: {integral:.3f}")
 
     # Interactive widgets and buttons
     ax_save = plt.axes([0.5, 0.4, 0.1, 0.075])
@@ -119,5 +167,13 @@ if __name__ == "__main__":
     ax_repeat = plt.axes([0.7, 0.4, 0.1, 0.075])
     button_repeat = Button(ax_repeat, "Calculate x10")
     button_repeat.on_clicked(lambda e: [simulate(e) for _ in range(10)])
+
+    ax_activator_input = plt.axes([0.65, 0.3, 0.1, 0.075])
+    activator_params = TextBox(ax_activator_input, "A(x) (Amplitude, Width, Distance):")
+    activator_params.on_submit(update_activator_from_textbox)
+
+    ax_inhibitor_input = plt.axes([0.65, 0.2, 0.1, 0.075])
+    inhibitor_params = TextBox(ax_inhibitor_input, "I(x) (Amplitude, Width, Distance):")
+    inhibitor_params.on_submit(update_inhibitor_from_textbox)
 
     plt.show()

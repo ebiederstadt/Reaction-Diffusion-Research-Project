@@ -16,10 +16,10 @@ class KernelPortion:
         self.distance = distance
         self.width = width
 
-        self.kernel = self.update_kernel_portion()
+        self.kernel = self.compute()
 
-    def update_kernel_portion(self):
-        """Returns one half of the kernel (either the activator or the inhibitor)"""
+    def compute(self):
+        """Compute the value of the gaussian function"""
 
         x = np.linspace(0, c.KERNEL_SIZE)
         return (
@@ -34,6 +34,13 @@ class KernelPortion:
             / np.sqrt(2 * np.pi)
             * np.exp(-(((distance - self.distance) ** 2 / self.width) / 2))
         )
+
+    def update(self, amplitude: float, distance: float, width: float):
+        self.amplitude = amplitude
+        self.distance = distance
+        self.width = width
+
+        self.kernel = self.compute()
 
 
 def kernel_index(x, y):
