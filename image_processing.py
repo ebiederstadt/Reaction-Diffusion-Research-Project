@@ -56,7 +56,9 @@ def update_csv(timestamp, activator, inhibitor, kernel_integral):
 
 def save_rd_matrix(kt_matrix, timestamp):
     fig, ax = plt.subplots()
-    ax.imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
+    ax.imshow(
+        np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
+    )
     ax.set_title("Reaction Diffusion Result")
     fig.savefig(os.path.join("images", f"{timestamp}_reaction_diffusion_result.png"))
     plt.close(fig)

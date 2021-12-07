@@ -64,7 +64,9 @@ def simulate(event):
 
     global fig, ax
     ax = ax.ravel()
-    ax[0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
+    ax[0].imshow(
+        np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
+    )
     plt.draw()
 
 
@@ -136,7 +138,9 @@ def update_inhibitor_from_textbox(text):
 
 if __name__ == "__main__":
     ax[0][0].set_title("Reaction Diffusion Result")
-    ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
+    ax[0][0].imshow(
+        np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
+    )
 
     ax[0][1].set_title("Kernel (Activator + Inhibitor)")
     ax[0][1].set_xlim(0, c.KERNEL_SIZE)
