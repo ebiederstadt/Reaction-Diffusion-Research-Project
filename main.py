@@ -26,6 +26,9 @@ kernel_cache = np.zeros((c.KERNEL_SIZE * 2 + 1) * (c.KERNEL_SIZE * 2 + 1))
 set_kernel_cache(kernel_cache, activator, inhibitor)
 
 fig, ax = plt.subplots(2, 2)
+# Show the Integral of the Kernel
+integral = integrate_kernel(kernel)
+integral_text = fig.text(0.5, 0.1, f"Integrated Value of the Kernel: {integral:.3f}")
 
 
 def save_figures(event):
@@ -109,6 +112,11 @@ def update_activator_from_textbox(text):
     ax = ax.ravel()
     ax[1].lines[0].set_ydata(kernel)
     ax[1].lines[1].set_ydata(activator.kernel)
+
+    # Update integral
+    integral = integrate_kernel(kernel)
+    integral_text.set_text(f"Integrated Value of the Kernel: {integral:.3f}")
+
     plt.draw()
 
 
@@ -131,6 +139,11 @@ def update_inhibitor_from_textbox(text):
     ax = ax.ravel()
     ax[1].lines[0].set_ydata(kernel)
     ax[1].lines[2].set_ydata(inhibitor.kernel)
+
+    # Update integral
+    integral = integrate_kernel(kernel)
+    integral_text.set_text(f"Integrated Value of the Kernel: {integral:.3f}")
+
     plt.draw()
 
 
@@ -150,10 +163,6 @@ if __name__ == "__main__":
     ax[1][0].grid(True)
 
     ax[1][1].axis("off")
-
-    # Show the Integral of the Kernel
-    integral = integrate_kernel(kernel)
-    plt.text(0, 0.1, f"Integrated Value of the Kernel: {integral:.3f}")
 
     # Interactive widgets and buttons
     ax_save = plt.axes([0.5, 0.4, 0.1, 0.075])
