@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import Bbox
 
+from kernel_helpers import integrate_kernel
+
 
 def full_extent(ax, pad=0.0):
     """Get the full extent of an axes, including axes labels, tick labels, and
@@ -30,10 +32,10 @@ def write_figures(kt_matrix, kernel, activator, inhibitor):
     timestamp = datetime.timestamp(datetime.now())
     save_rd_matrix(kt_matrix, timestamp)
     save_kernel(kernel, activator.kernel, inhibitor.kernel, timestamp)
-    update_csv(timestamp, activator, inhibitor)
+    update_csv(timestamp, activator, inhibitor, integrate_kernel(kernel))
 
 
-def update_csv(timestamp, activator, inhibitor):
+def update_csv(timestamp, activator, inhibitor, kernel_integral):
     with open(os.path.join("images", "info.csv"), "a") as file:
         writer = csv.writer(file, delimiter=",")
         writer.writerow(
@@ -45,6 +47,7 @@ def update_csv(timestamp, activator, inhibitor):
                 inhibitor.amplitude,
                 inhibitor.distance,
                 inhibitor.width,
+                f"{kernel_integral:.3f}",
             ]
         )
 

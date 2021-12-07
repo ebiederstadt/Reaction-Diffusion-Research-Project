@@ -6,78 +6,24 @@ from time import perf_counter
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.transforms import Bbox
 from matplotlib.widgets import Button
 from shared_ndarray2 import SharedNDArray
 
+import constants as c
 from image_processing import save_fig, write_figures
-
-# Constants
-MATRIX_SIZE = 200
-KERNEL_SIZE = 20
-
-MIN_STIMULATION = 0
-MAX_STIMULATION = 5
-DECAY_RATE = 0.9
+from kernel_helpers import KernelPortion, set_kernel_cache, integrate_kernel
 
 
-@dataclass
-class KernelPortion:
-    amplitude: float
-    distance: float
-    width: float
-
-    def __init__(self, amplitude: float, distance: float, width: float):
-        self.amplitude = amplitude
-        self.distance = distance
-        self.width = width
-
-        self.kernel = self.update_kernel_portion()
-
-    def update_kernel_portion(self):
-        """Returns one half of the kernel (either the activator or the inhibitor)"""
-
-        return (
-            self.amplitude
-            / np.sqrt(2 * np.pi)
-            * np.exp(-(((x - self.distance) ** 2 / self.width) / 2))
-        )
-
-    def compute_at_given_distance(self, distance: float) -> float:
-        return (
-            self.amplitude
-            / np.sqrt(2 * np.pi)
-            * np.exp(-(((distance - self.distance) ** 2 / self.width) / 2))
-        )
-
-
-def kernel_index(x, y):
-    return (KERNEL_SIZE * 2 + 1) * y + x
-
-
-def set_kernel_cache():
-    for p in range(-KERNEL_SIZE, KERNEL_SIZE + 1):
-        for q in range(-KERNEL_SIZE, KERNEL_SIZE + 1):
-            distance = np.sqrt(p ** 2 + q ** 2)
-            kernel_cache[
-                kernel_index(p + KERNEL_SIZE, q + KERNEL_SIZE)
-            ] = activator.compute_at_given_distance(
-                distance
-            ) + inhibitor.compute_at_given_distance(
-                distance
-            )
-
-
-x = np.linspace(0, KERNEL_SIZE)
+x = np.linspace(0, c.KERNEL_SIZE)
 
 # Starting values for the kernel and the simulation matrix
-kt_matrix = np.random.rand(MATRIX_SIZE * MATRIX_SIZE)
+kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 activator = KernelPortion(21, 0, 2.06)
 inhibitor = KernelPortion(-6.5, 4.25, 1.38)
 
 kernel = activator.kernel + inhibitor.kernel
-kernel_cache = np.zeros((KERNEL_SIZE * 2 + 1) * (KERNEL_SIZE * 2 + 1))
-set_kernel_cache()
+kernel_cache = np.zeros((c.KERNEL_SIZE * 2 + 1) * (c.KERNEL_SIZE * 2 + 1))
+set_kernel_cache(kernel_cache, activator, inhibitor)
 
 
 def save_figures(event):
@@ -88,7 +34,7 @@ def save_figures(event):
 
 
 def matrixIndex(x, y):
-    return MATRIX_SIZE * y + x
+    return c.MATRIX_SIZE * y + x
 
 
 def simulate(event):
@@ -98,20 +44,20 @@ def simulate(event):
         print("Starting simulation...")
         start = perf_counter()
         stimulation_matrix = SharedNDArray.from_array(
-            mem_mgr, np.zeros(MATRIX_SIZE ** 2)
+            mem_mgr, np.zeros(c.MATRIX_SIZE ** 2)
         )
         with mp.Pool() as pool:
             pool.starmap(
                 compute_cell_stimulation,
                 [
                     (j, i, stimulation_matrix)
-                    for j in range(MATRIX_SIZE)
-                    for i in range(MATRIX_SIZE)
+                    for j in range(c.MATRIX_SIZE)
+                    for i in range(c.MATRIX_SIZE)
                 ],
             )
 
-    np.clip(stimulation_matrix.get(), MIN_STIMULATION, MAX_STIMULATION)
-    kt_matrix = kt_matrix * DECAY_RATE + stimulation_matrix.get()
+    np.clip(stimulation_matrix.get(), c.MIN_STIMULATION, c.MAX_STIMULATION)
+    kt_matrix = kt_matrix * c.DECAY_RATE + stimulation_matrix.get()
     end = perf_counter()
     print("Simulation finished")
     print(f"Simulation took {end - start} seconds")
@@ -122,15 +68,15 @@ def simulate(event):
 def compute_cell_stimulation(j, i, stimulation_matrix: SharedNDArray) -> float:
     """Compute the stimulation received by a single cell"""
 
-    kernel_width = KERNEL_SIZE * 2
-    yy = j + MATRIX_SIZE - KERNEL_SIZE
-    xx = i + MATRIX_SIZE - KERNEL_SIZE
-    mat_value = kt_matrix[j * MATRIX_SIZE + i]
+    kernel_width = c.KERNEL_SIZE * 2
+    yy = j + c.MATRIX_SIZE - c.KERNEL_SIZE
+    xx = i + c.MATRIX_SIZE - c.KERNEL_SIZE
+    mat_value = kt_matrix[j * c.MATRIX_SIZE + i]
 
     for q in range(kernel_width):
-        y = (yy + q) % MATRIX_SIZE
+        y = (yy + q) % c.MATRIX_SIZE
         for p in range(kernel_width):
-            x = (xx + p) % MATRIX_SIZE
+            x = (xx + p) % c.MATRIX_SIZE
             index = matrixIndex(x, y)
             # This is the core idea: we do the numerical integration at this stage, not at the other stage
             stimulation_matrix[index] = (
@@ -145,7 +91,7 @@ if __name__ == "__main__":
     ax[0][0].imshow(np.reshape(kt_matrix, (200, 200)), interpolation="none")
 
     ax[0][1].set_title("Kernel (Activator + Inhibitor)")
-    ax[0][1].set_xlim(0, KERNEL_SIZE)
+    ax[0][1].set_xlim(0, c.KERNEL_SIZE)
     ax[0][1].grid(True)
     ax[0][1].plot(x, activator.kernel, label="Activator", linestyle="dashed")
     ax[0][1].plot(x, inhibitor.kernel, label="Inhibitor", linestyle="dashed")
@@ -157,6 +103,10 @@ if __name__ == "__main__":
 
     ax[1][1].axis("off")
 
+    # Show the Integral of the Kernel
+    integral = integrate_kernel(kernel)
+    plt.text(0, 0.2, f"{integral:.3f}")
+
     # Interactive widgets and buttons
     ax_save = plt.axes([0.5, 0.4, 0.1, 0.075])
     button_save = Button(ax_save, "Save Figures")
@@ -165,5 +115,9 @@ if __name__ == "__main__":
     ax_compute = plt.axes([0.6, 0.4, 0.1, 0.075])
     button_compute = Button(ax_compute, "Start Calculation")
     button_compute.on_clicked(simulate)
+
+    ax_repeat = plt.axes([0.7, 0.4, 0.1, 0.075])
+    button_repeat = Button(ax_repeat, "Calculate x10")
+    button_repeat.on_clicked(lambda e: [simulate(e) for _ in range(10)])
 
     plt.show()
