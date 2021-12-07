@@ -96,7 +96,6 @@ def update_activator_from_textbox(text):
         print(text)
         return
 
-    # Update the kernel with the new parameters
     kernel.update_activator(amplitude, distance, width)
 
     # Redraw the figure
@@ -105,7 +104,8 @@ def update_activator_from_textbox(text):
     ax[1].lines[0].set_ydata(kernel.kernel)
     ax[1].lines[1].set_ydata(kernel.activator.kernel)
 
-    # Update integral
+    ax[2].lines[0].set_ydata(kernel.fourier)
+
     integral_text.set_text(f"Integrated Value of the Kernel: {kernel.integral:.3f}")
 
     plt.draw()
@@ -119,7 +119,6 @@ def update_inhibitor_from_textbox(text):
         print(text)
         return
 
-    # Update with the new parameters
     kernel.update_inhibitor(amplitude, distance, width)
 
     # Redraw the figure
@@ -128,7 +127,8 @@ def update_inhibitor_from_textbox(text):
     ax[1].lines[0].set_ydata(kernel.kernel)
     ax[1].lines[2].set_ydata(kernel.inhibitor.kernel)
 
-    # Update integral
+    ax[2].lines[0].set_ydata(kernel.fourier)
+
     integral_text.set_text(f"Integrated Value of the Kernel: {kernel.integral:.3f}")
 
     plt.draw()
@@ -148,6 +148,8 @@ if __name__ == "__main__":
 
     ax[1][0].set_title("Fourier Transform of the Kernel")
     ax[1][0].grid(True)
+    ax[1][0].plot(kernel.fourier)
+    ax[1][0].set_xlim(0, 20)
 
     ax[1][1].axis("off")
 

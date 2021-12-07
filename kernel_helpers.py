@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from scipy.integrate import simpson
+from scipy.fft import dct
 import numpy as np
 
 import constants as c
@@ -51,6 +52,7 @@ class Kernel:
         self.integral = self.integrate()
         self.cache = np.zeros((c.KERNEL_SIZE * 2 + 1) * (c.KERNEL_SIZE * 2 + 1))
         self.update_cache()
+        self.fourier = self.compute_fourier()
 
     def _index(self, x, y):
         return (c.KERNEL_SIZE * 2 + 1) * y + x
@@ -58,6 +60,10 @@ class Kernel:
     def integrate(self):
         x = np.linspace(0, c.KERNEL_SIZE)
         return simpson(self.kernel, x)
+
+    def compute_fourier(self):
+        yf = dct(self.kernel)
+        return yf
 
     def update_cache(self):
         for p in range(-c.KERNEL_SIZE, c.KERNEL_SIZE + 1):
@@ -73,10 +79,14 @@ class Kernel:
 
     def update_activator(self, amplitude: float, distance: float, width: float):
         self.activator.update(amplitude, distance, width)
+        self.kernel = self.activator.kernel + self.inhibitor.kernel
         self.update_cache()
         self.integrate()
+        self.fourier = self.compute_fourier()
 
     def update_inhibitor(self, amplitude: float, distance: float, width: float):
         self.inhibitor.update(amplitude, distance, width)
+        self.kernel = self.activator.kernel + self.inhibitor.kernel
         self.update_cache()
         self.integrate()
+        self.fourier = self.compute_fourier()
