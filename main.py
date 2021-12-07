@@ -9,7 +9,7 @@ from matplotlib.widgets import Button, TextBox
 from shared_ndarray2 import SharedNDArray
 
 import constants as c
-from image_processing import save_fig, write_figures
+from image_processing import write_figures
 from kernel_helpers import Kernel
 
 
@@ -30,7 +30,6 @@ def save_figures(event):
     """Save all the figures"""
     time_stamp = datetime.timestamp(datetime.now())
     write_figures(kt_matrix, kernel)
-    save_fig(f"{time_stamp}_fourier_transform.png", fig, ax[1][0])
 
 
 def matrixIndex(x, y):

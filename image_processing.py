@@ -4,28 +4,8 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.transforms import Bbox
 
-from kernel_helpers import Kernel
-
-
-def full_extent(ax, pad=0.0):
-    """Get the full extent of an axes, including axes labels, tick labels, and
-    titles."""
-    # For text objects, we need to draw the figure first, otherwise the extents
-    # are undefined.
-    ax.figure.canvas.draw()
-    items = ax.get_xticklabels() + ax.get_yticklabels()
-    #    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
-    items += [ax, ax.title]
-    bbox = Bbox.union([item.get_window_extent() for item in items])
-
-    return bbox.expanded(1.0 + pad, 1.0 + pad)
-
-
-def save_fig(filename: str, fig, ax):
-    extent = full_extent(ax).transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(os.path.join("images", filename), bbox_inches=extent)
+import constants as c
 
 
 def write_figures(kt_matrix, kernel):
@@ -34,6 +14,7 @@ def write_figures(kt_matrix, kernel):
     save_kernel(
         kernel.kernel, kernel.activator.kernel, kernel.inhibitor.kernel, timestamp
     )
+    save_fourier(kernel.fourier, timestamp)
     update_csv(timestamp, kernel.activator, kernel.inhibitor, kernel.integrate())
 
 
@@ -75,4 +56,14 @@ def save_kernel(kernel, activator, inhibitor, timestamp):
     ax.legend()
     ax.set_xlim(0, 20)
     fig.savefig(os.path.join("images", f"{timestamp}_kernel.png"))
+    plt.close(fig)
+
+
+def save_fourier(fourier, timestamp):
+    fig, ax = plt.subplots()
+    ax.set_title("Fourier Transform of the Kernel")
+    ax.plot(fourier)
+    ax.set_xlim(0, 20)
+    ax.grid(True)
+    fig.savefig(os.path.join("images", f"{timestamp}_fourier.png"))
     plt.close(fig)
