@@ -43,25 +43,40 @@ class KernelPortion:
         self.kernel = self.compute()
 
 
-def kernel_index(x, y):
-    return (c.KERNEL_SIZE * 2 + 1) * y + x
+class Kernel:
+    def __init__(self):
+        self.activator = KernelPortion(21, 0, 2.06)
+        self.inhibitor = KernelPortion(-6.5, 4.25, 1.38)
+        self.kernel = self.activator.kernel + self.inhibitor.kernel
+        self.integral = self.integrate()
+        self.cache = np.zeros((c.KERNEL_SIZE * 2 + 1) * (c.KERNEL_SIZE * 2 + 1))
+        self.update_cache()
 
+    def _index(self, x, y):
+        return (c.KERNEL_SIZE * 2 + 1) * y + x
 
-def set_kernel_cache(
-    kernel_cache: np.ndarray, activator: KernelPortion, inhibitor: KernelPortion
-):
-    for p in range(-c.KERNEL_SIZE, c.KERNEL_SIZE + 1):
-        for q in range(-c.KERNEL_SIZE, c.KERNEL_SIZE + 1):
-            distance = np.sqrt(p ** 2 + q ** 2)
-            kernel_cache[
-                kernel_index(p + c.KERNEL_SIZE, q + c.KERNEL_SIZE)
-            ] = activator.compute_at_given_distance(
-                distance
-            ) + inhibitor.compute_at_given_distance(
-                distance
-            )
+    def integrate(self):
+        x = np.linspace(0, c.KERNEL_SIZE)
+        return simpson(self.kernel, x)
 
+    def update_cache(self):
+        for p in range(-c.KERNEL_SIZE, c.KERNEL_SIZE + 1):
+            for q in range(-c.KERNEL_SIZE, c.KERNEL_SIZE + 1):
+                distance = np.sqrt(p ** 2 + q ** 2)
+                self.cache[
+                    self._index(p + c.KERNEL_SIZE, q + c.KERNEL_SIZE)
+                ] = self.activator.compute_at_given_distance(
+                    distance
+                ) + self.inhibitor.compute_at_given_distance(
+                    distance
+                )
 
-def integrate_kernel(kernel):
-    x = np.linspace(0, c.KERNEL_SIZE)
-    return simpson(kernel, x)
+    def update_activator(self, amplitude: float, distance: float, width: float):
+        self.activator.update(amplitude, distance, width)
+        self.update_cache()
+        self.integrate()
+
+    def update_inhibitor(self, amplitude: float, distance: float, width: float):
+        self.inhibitor.update(amplitude, distance, width)
+        self.update_cache()
+        self.integrate()

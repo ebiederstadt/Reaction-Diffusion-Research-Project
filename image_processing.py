@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.transforms import Bbox
 
-from kernel_helpers import integrate_kernel
+from kernel_helpers import Kernel
 
 
 def full_extent(ax, pad=0.0):
@@ -28,11 +28,13 @@ def save_fig(filename: str, fig, ax):
     fig.savefig(os.path.join("images", filename), bbox_inches=extent)
 
 
-def write_figures(kt_matrix, kernel, activator, inhibitor):
+def write_figures(kt_matrix, kernel):
     timestamp = datetime.timestamp(datetime.now())
     save_rd_matrix(kt_matrix, timestamp)
-    save_kernel(kernel, activator.kernel, inhibitor.kernel, timestamp)
-    update_csv(timestamp, activator, inhibitor, integrate_kernel(kernel))
+    save_kernel(
+        kernel.kernel, kernel.activator.kernel, kernel.inhibitor.kernel, timestamp
+    )
+    update_csv(timestamp, kernel.activator, kernel.inhibitor, kernel.integrate())
 
 
 def update_csv(timestamp, activator, inhibitor, kernel_integral):

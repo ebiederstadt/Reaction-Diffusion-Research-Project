@@ -1,5 +1,4 @@
 import multiprocessing as mp
-from dataclasses import dataclass
 from datetime import datetime
 from multiprocessing.managers import SharedMemoryManager
 from time import perf_counter
@@ -11,30 +10,26 @@ from shared_ndarray2 import SharedNDArray
 
 import constants as c
 from image_processing import save_fig, write_figures
-from kernel_helpers import KernelPortion, set_kernel_cache, integrate_kernel
+from kernel_helpers import Kernel
 
 
 x = np.linspace(0, c.KERNEL_SIZE)
 
 # Starting values for the kernel and the simulation matrix
 kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
-activator = KernelPortion(21, 0, 2.06)
-inhibitor = KernelPortion(-6.5, 4.25, 1.38)
-
-kernel = activator.kernel + inhibitor.kernel
-kernel_cache = np.zeros((c.KERNEL_SIZE * 2 + 1) * (c.KERNEL_SIZE * 2 + 1))
-set_kernel_cache(kernel_cache, activator, inhibitor)
+kernel = Kernel()
 
 fig, ax = plt.subplots(2, 2)
 # Show the Integral of the Kernel
-integral = integrate_kernel(kernel)
-integral_text = fig.text(0.5, 0.1, f"Integrated Value of the Kernel: {integral:.3f}")
+integral_text = fig.text(
+    0.5, 0.1, f"Integrated Value of the Kernel: {kernel.integral:.3f}"
+)
 
 
 def save_figures(event):
     """Save all the figures"""
     time_stamp = datetime.timestamp(datetime.now())
-    write_figures(kt_matrix, kernel, activator, inhibitor)
+    write_figures(kt_matrix, kernel)
     save_fig(f"{time_stamp}_fourier_transform.png", fig, ax[1][0])
 
 
@@ -89,7 +84,7 @@ def compute_cell_stimulation(j, i, stimulation_matrix: SharedNDArray) -> float:
             # This is the core idea: we do the numerical integration at this stage, not at the other stage
             stimulation_matrix[index] = (
                 stimulation_matrix[index]
-                + kernel_cache[q * kernel_width + p] * mat_value
+                + kernel.cache[q * kernel_width + p] * mat_value
             )
 
 
@@ -102,20 +97,16 @@ def update_activator_from_textbox(text):
         return
 
     # Update the kernel with the new parameters
-    activator.update(amplitude, distance, width)
-    global kernel
-    kernel = activator.kernel + inhibitor.kernel
-    set_kernel_cache(kernel_cache, activator, inhibitor)
+    kernel.update_activator(amplitude, distance, width)
 
     # Redraw the figure
     global fig, ax
     ax = ax.ravel()
-    ax[1].lines[0].set_ydata(kernel)
-    ax[1].lines[1].set_ydata(activator.kernel)
+    ax[1].lines[0].set_ydata(kernel.kernel)
+    ax[1].lines[1].set_ydata(kernel.activator.kernel)
 
     # Update integral
-    integral = integrate_kernel(kernel)
-    integral_text.set_text(f"Integrated Value of the Kernel: {integral:.3f}")
+    integral_text.set_text(f"Integrated Value of the Kernel: {kernel.integral:.3f}")
 
     plt.draw()
 
@@ -129,20 +120,16 @@ def update_inhibitor_from_textbox(text):
         return
 
     # Update with the new parameters
-    inhibitor.update(amplitude, distance, width)
-    global kernel
-    kernel = activator.kernel + inhibitor.kernel
-    set_kernel_cache(kernel_cache, activator, inhibitor)
+    kernel.update_inhibitor(amplitude, distance, width)
 
     # Redraw the figure
     global fig, ax
     ax = ax.ravel()
-    ax[1].lines[0].set_ydata(kernel)
-    ax[1].lines[2].set_ydata(inhibitor.kernel)
+    ax[1].lines[0].set_ydata(kernel.kernel)
+    ax[1].lines[2].set_ydata(kernel.inhibitor.kernel)
 
     # Update integral
-    integral = integrate_kernel(kernel)
-    integral_text.set_text(f"Integrated Value of the Kernel: {integral:.3f}")
+    integral_text.set_text(f"Integrated Value of the Kernel: {kernel.integral:.3f}")
 
     plt.draw()
 
@@ -154,9 +141,9 @@ if __name__ == "__main__":
     ax[0][1].set_title("Kernel (Activator + Inhibitor)")
     ax[0][1].set_xlim(0, c.KERNEL_SIZE)
     ax[0][1].grid(True)
-    ax[0][1].plot(x, kernel, label="Kernel")
-    ax[0][1].plot(x, activator.kernel, label="Activator", linestyle="dashed")
-    ax[0][1].plot(x, inhibitor.kernel, label="Inhibitor", linestyle="dashed")
+    ax[0][1].plot(x, kernel.kernel, label="Kernel")
+    ax[0][1].plot(x, kernel.activator.kernel, label="Activator", linestyle="dashed")
+    ax[0][1].plot(x, kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed")
     ax[0][1].legend()
 
     ax[1][0].set_title("Fourier Transform of the Kernel")
