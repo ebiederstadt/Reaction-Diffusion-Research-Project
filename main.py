@@ -41,7 +41,9 @@ def simulate(event):
     start = perf_counter()
     compute_stimulation(stimulation_matrix, kernel.cache)
 
-    np.clip(stimulation_matrix, c.MIN_STIMULATION, c.MAX_STIMULATION)
+    np.clip(
+        stimulation_matrix, c.MIN_STIMULATION, c.MAX_STIMULATION, out=stimulation_matrix
+    )
     kt_matrix = kt_matrix * c.DECAY_RATE + stimulation_matrix / 100
     end = perf_counter()
     print("Simulation finished")
@@ -120,6 +122,19 @@ def update_inhibitor_from_textbox(text):
     plt.draw()
 
 
+def randomize(event):
+    global kt_matrix
+    global fig, ax
+
+    kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
+
+    ax = ax.ravel()
+    ax[0].imshow(
+        np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
+    )
+    plt.draw()
+
+
 if __name__ == "__main__":
     ax[0][0].set_title("Reaction Diffusion Result")
     ax[0][0].imshow(
@@ -153,6 +168,10 @@ if __name__ == "__main__":
     ax_repeat = plt.axes([0.7, 0.4, 0.1, 0.075])
     button_repeat = Button(ax_repeat, "Calculate x10")
     button_repeat.on_clicked(lambda e: [simulate(e) for _ in range(10)])
+
+    ax_randomize = plt.axes([0.8, 0.4, 0.1, 0.075])
+    button_randomize = Button(ax_randomize, "Randomize")
+    button_randomize.on_clicked(randomize)
 
     ax_activator_input = plt.axes([0.65, 0.3, 0.1, 0.075])
     activator_params = TextBox(ax_activator_input, "A(x) (Amplitude, Width, Distance):")
