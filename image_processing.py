@@ -4,8 +4,13 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
 
 import constants as c
+
+
+def normalize_array(arr: np.ndarray) -> np.ndarray:
+    return (arr - arr.min()) / (arr.max() - arr.min())
 
 
 def write_figures(kt_matrix, kernel):
@@ -36,13 +41,21 @@ def update_csv(timestamp, activator, inhibitor, kernel_integral):
 
 
 def save_rd_matrix(kt_matrix, timestamp):
+    resized_matrix = np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE))
+
+    # Save a copy for presentation and showing off
     fig, ax = plt.subplots()
-    ax.imshow(
-        np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
-    )
+    ax.imshow(resized_matrix, interpolation="none")
     ax.set_title("Reaction Diffusion Result")
     fig.savefig(os.path.join("images", f"{timestamp}_reaction_diffusion_result.png"))
     plt.close(fig)
+
+    # Save a copy for use for heatmaps and whatnot
+    plt.imsave(
+        os.path.join("images", f"{timestamp}_reaction_diffusion_heatmap.png"),
+        resized_matrix,
+        cmap="gray",
+    )
 
 
 def save_kernel(kernel, activator, inhibitor, timestamp):
