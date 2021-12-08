@@ -6,7 +6,7 @@ from time import perf_counter
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button, TextBox
-from shared_ndarray2 import SharedNDArray
+from numba import njit
 
 import constants as c
 from image_processing import write_figures
@@ -32,31 +32,17 @@ def save_figures(event):
     write_figures(kt_matrix, kernel)
 
 
-def matrixIndex(x, y):
-    return c.MATRIX_SIZE * y + x
-
-
 def simulate(event):
     global kt_matrix
 
-    with SharedMemoryManager() as mem_mgr:
-        print("Starting simulation...")
-        start = perf_counter()
-        stimulation_matrix = SharedNDArray.from_array(
-            mem_mgr, np.zeros(c.MATRIX_SIZE ** 2)
-        )
-        with mp.Pool() as pool:
-            pool.starmap(
-                compute_cell_stimulation,
-                [
-                    (j, i, stimulation_matrix)
-                    for j in range(c.MATRIX_SIZE)
-                    for i in range(c.MATRIX_SIZE)
-                ],
-            )
+    stimulation_matrix = np.zeros(c.MATRIX_SIZE ** 2)
 
-    np.clip(stimulation_matrix.get(), c.MIN_STIMULATION, c.MAX_STIMULATION)
-    kt_matrix = kt_matrix * c.DECAY_RATE + stimulation_matrix.get()
+    print("Starting simulation")
+    start = perf_counter()
+    compute_stimulation(stimulation_matrix, kernel.cache)
+
+    np.clip(stimulation_matrix, c.MIN_STIMULATION, c.MAX_STIMULATION)
+    kt_matrix = kt_matrix * c.DECAY_RATE + stimulation_matrix / 100
     end = perf_counter()
     print("Simulation finished")
     print(f"Simulation took {end - start} seconds")
@@ -69,24 +55,23 @@ def simulate(event):
     plt.draw()
 
 
-def compute_cell_stimulation(j, i, stimulation_matrix: SharedNDArray) -> float:
-    """Compute the stimulation received by a single cell"""
-
+@njit
+def compute_stimulation(stimulation_matrix: np.ndarray, kernel_cache: np.ndarray):
     kernel_width = c.KERNEL_SIZE * 2
-    yy = j + c.MATRIX_SIZE - c.KERNEL_SIZE
-    xx = i + c.MATRIX_SIZE - c.KERNEL_SIZE
-    mat_value = kt_matrix[j * c.MATRIX_SIZE + i]
-
-    for q in range(kernel_width):
-        y = (yy + q) % c.MATRIX_SIZE
-        for p in range(kernel_width):
-            x = (xx + p) % c.MATRIX_SIZE
-            index = matrixIndex(x, y)
-            # This is the core idea: we do the numerical integration at this stage, not at the other stage
-            stimulation_matrix[index] = (
-                stimulation_matrix[index]
-                + kernel.cache[q * kernel_width + p] * mat_value
-            )
+    for j in range(c.MATRIX_SIZE):
+        yy = j + c.MATRIX_SIZE - c.KERNEL_SIZE
+        for i in range(c.MATRIX_SIZE):
+            xx = i + c.MATRIX_SIZE - c.KERNEL_SIZE
+            for q in range(kernel_width):
+                y = (yy + q) % c.MATRIX_SIZE
+                for p in range(kernel_width):
+                    x = (xx + p) % c.MATRIX_SIZE
+                    index = c.MATRIX_SIZE * y + x
+                    stimulation_matrix[index] = (
+                        stimulation_matrix[index]
+                        + kernel_cache[q * kernel_width + p]
+                        * kt_matrix[j * c.MATRIX_SIZE + i]
+                    )
 
 
 def update_activator_from_textbox(text):
