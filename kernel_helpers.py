@@ -26,7 +26,7 @@ class KernelPortion:
         return (
             self.amplitude
             / np.sqrt(2 * np.pi)
-            * np.exp(-(((x - self.distance) ** 2 / self.width) / 2))
+            * np.exp(-(((x - self.distance) / self.width) ** 2 / 2))
         )
 
     def compute_at_given_distance(self, distance: float) -> float:
