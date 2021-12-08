@@ -6,10 +6,10 @@ authors = ["Erik Biederstadt <biederstadterik@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "3.9-3.11"
-numpy = "^1.21.4"
+numpy = ">=1.17,<1.21"
 matplotlib = "^3.5.0"
 scipy = "^1.7.3"
-shared-ndarray2 = "^1.0.0"
+numba = "^0.54.1"
 
 [tool.poetry.dev-dependencies]
 black = {version = "^21.12b0", allow-prereleases = true}
