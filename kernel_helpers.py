@@ -33,7 +33,7 @@ class KernelPortion:
         return (
             self.amplitude
             / np.sqrt(2 * np.pi)
-            * np.exp(-(((distance - self.distance) / self.width) ** 2 / 2))
+            * np.exp(-(np.square((distance - self.distance) / self.width) / 2))
         )
 
     def update(self, amplitude: float, distance: float, width: float):

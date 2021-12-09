@@ -35,14 +35,15 @@ def save_figures(event):
 def simulate(event):
     global kt_matrix
 
-    stimulation_matrix = np.zeros(c.MATRIX_SIZE ** 2)
-
     print("Starting simulation")
     start = perf_counter()
-    compute_stimulation(stimulation_matrix, kernel.cache)
+    stimulation_matrix = compute_stimulation(kernel.cache)
 
     np.clip(
         stimulation_matrix, c.MIN_STIMULATION, c.MAX_STIMULATION, out=stimulation_matrix
+    )
+    print(
+        f"stimulation max: {stimulation_matrix.max()} min: {stimulation_matrix.min()}, mean: {stimulation_matrix.mean()}"
     )
     kt_matrix = kt_matrix * c.DECAY_RATE + stimulation_matrix / 100
     end = perf_counter()
@@ -58,22 +59,26 @@ def simulate(event):
 
 
 @njit
-def compute_stimulation(stimulation_matrix: np.ndarray, kernel_cache: np.ndarray):
+def compute_stimulation(kernel_cache: np.ndarray):
+    stimulation_matrix = np.zeros(c.MATRIX_SIZE ** 2)
     kernel_width = c.KERNEL_SIZE * 2
+    indexMat = 0
     for j in range(c.MATRIX_SIZE):
         yy = j + c.MATRIX_SIZE - c.KERNEL_SIZE
         for i in range(c.MATRIX_SIZE):
             xx = i + c.MATRIX_SIZE - c.KERNEL_SIZE
+            matValue = kt_matrix[indexMat]
+            indexMat = indexMat + 1
+            indexK = 0
             for q in range(kernel_width):
                 y = (yy + q) % c.MATRIX_SIZE
                 for p in range(kernel_width):
                     x = (xx + p) % c.MATRIX_SIZE
                     index = c.MATRIX_SIZE * y + x
-                    stimulation_matrix[index] = (
-                        stimulation_matrix[index]
-                        + kernel_cache[q * kernel_width + p]
-                        * kt_matrix[j * c.MATRIX_SIZE + i]
-                    )
+                    stimulation_matrix[index] += kernel_cache[indexK] * matValue
+                    indexK = indexK + 1
+
+    return stimulation_matrix
 
 
 def update_activator_from_textbox(text):
