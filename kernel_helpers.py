@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from numpy.lib.function_base import diff
 from scipy.integrate import simpson
 from scipy.fft import dct
 import numpy as np
+from numba import njit
 
 import constants as c
 
@@ -42,6 +44,14 @@ class KernelPortion:
         self.width = width
 
         self.kernel = self.compute()
+
+    def diff(self, amplitude, width, distance):
+        """Check to see if anything has changed"""
+        return not (
+            self.amplitude == amplitude
+            and self.width == width
+            and self.distance == distance
+        )
 
 
 class Kernel:
@@ -90,3 +100,25 @@ class Kernel:
         self.update_cache()
         self.integrate()
         self.fourier = self.compute_fourier()
+
+    @njit
+    def compute_stimulation(self, kt_matrix: np.ndarray):
+        stimulation_matrix = np.zeros(c.MATRIX_SIZE ** 2)
+        kernel_width = c.KERNEL_SIZE * 2
+        indexMat = 0
+        for j in range(c.MATRIX_SIZE):
+            yy = j + c.MATRIX_SIZE - c.KERNEL_SIZE
+            for i in range(c.MATRIX_SIZE):
+                xx = i + c.MATRIX_SIZE - c.KERNEL_SIZE
+                matValue = kt_matrix[indexMat]
+                indexMat = indexMat + 1
+                indexK = 0
+                for q in range(kernel_width):
+                    y = (yy + q) % c.MATRIX_SIZE
+                    for p in range(kernel_width):
+                        x = (xx + p) % c.MATRIX_SIZE
+                        index = c.MATRIX_SIZE * y + x
+                        stimulation_matrix[index] += self.cache[indexK] * matValue
+                        indexK = indexK + 1
+
+        return stimulation_matrix

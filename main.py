@@ -6,7 +6,6 @@ from time import perf_counter
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button, TextBox
-from numba import njit
 
 import constants as c
 from image_processing import write_figures
@@ -37,7 +36,7 @@ def simulate(event):
 
     print("Starting simulation")
     start = perf_counter()
-    stimulation_matrix = compute_stimulation(kernel.cache)
+    stimulation_matrix = kernel.compute_stimulation(kt_matrix)
 
     np.clip(
         stimulation_matrix, c.MIN_STIMULATION, c.MAX_STIMULATION, out=stimulation_matrix
@@ -56,29 +55,6 @@ def simulate(event):
         np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
     )
     plt.draw()
-
-
-@njit
-def compute_stimulation(kernel_cache: np.ndarray):
-    stimulation_matrix = np.zeros(c.MATRIX_SIZE ** 2)
-    kernel_width = c.KERNEL_SIZE * 2
-    indexMat = 0
-    for j in range(c.MATRIX_SIZE):
-        yy = j + c.MATRIX_SIZE - c.KERNEL_SIZE
-        for i in range(c.MATRIX_SIZE):
-            xx = i + c.MATRIX_SIZE - c.KERNEL_SIZE
-            matValue = kt_matrix[indexMat]
-            indexMat = indexMat + 1
-            indexK = 0
-            for q in range(kernel_width):
-                y = (yy + q) % c.MATRIX_SIZE
-                for p in range(kernel_width):
-                    x = (xx + p) % c.MATRIX_SIZE
-                    index = c.MATRIX_SIZE * y + x
-                    stimulation_matrix[index] += kernel_cache[indexK] * matValue
-                    indexK = indexK + 1
-
-    return stimulation_matrix
 
 
 def update_activator_from_textbox(text):
