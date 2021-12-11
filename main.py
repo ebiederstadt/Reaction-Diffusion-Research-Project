@@ -1,164 +1,213 @@
-import multiprocessing as mp
-from datetime import datetime
-from multiprocessing.managers import SharedMemoryManager
+import sys
 from time import perf_counter
 
-import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
-from matplotlib.widgets import Button, TextBox
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.qt_compat import QtWidgets
+from matplotlib.figure import Figure
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QPushButton
 
 import constants as c
-from image_processing import write_figures
+from interval import SetInterval
 from kernel_helpers import Kernel, compute_stimulation
 
-x = np.linspace(0, c.KERNEL_SIZE)
 
-# Starting values for the kernel and the simulation matrix
-kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
-kernel = Kernel()
+class KTMethod(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self._main = QtWidgets.QWidget()
+        self.setCentralWidget(self._main)
+        layout = QtWidgets.QVBoxLayout(self._main)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-fig, ax = plt.subplots(2, 2)
-# Show the Integral of the Kernel
-integral_text = fig.text(
-    0.5, 0.1, f"Integrated Value of the Kernel: {kernel.integral:.3f}"
-)
+        self.fig = Figure(figsize=(8, 8))
+        self.canvas = FigureCanvas(self.fig)
+        layout.addWidget(self.canvas)
+        self.addToolBar(NavigationToolbar(self.canvas, self))
 
+        self._textwidget = QtWidgets.QWidget()
+        textlayout = QtWidgets.QHBoxLayout(self._textwidget)
+        self.activator_textbox = QtWidgets.QLineEdit(self)
+        self.activator_textbox.editingFinished.connect(self.on_activator_submit)
+        textlayout.addWidget(QtWidgets.QLabel("A(x) (Amplitude, Width, Distance): "))
+        textlayout.addWidget(self.activator_textbox)
 
-def save_figures(event):
-    """Save all the figures"""
-    time_stamp = datetime.timestamp(datetime.now())
-    write_figures(kt_matrix, kernel)
+        self.inhibitor_textbox = QtWidgets.QLineEdit(self)
+        self.inhibitor_textbox.editingFinished.connect(self.on_inhibitor_submit)
+        textlayout.addWidget(QtWidgets.QLabel("I(x) (Amplitude, Width, Distance): "))
+        textlayout.addWidget(self.inhibitor_textbox)
 
+        layout.addWidget(self._textwidget)
 
-def simulate(event):
-    global kt_matrix
+        button_widget = QtWidgets.QWidget()
+        button_layout = QtWidgets.QHBoxLayout(button_widget)
+        self.randomize_button = QPushButton(self)
+        self.randomize_button.setText("Randomize Matrix")
+        self.randomize_button.clicked.connect(self.randomize_matrix)
+        button_layout.addWidget(self.randomize_button)
 
-    print("Starting simulation")
-    start = perf_counter()
-    stimulation_matrix = compute_stimulation(kernel.cache, kt_matrix)
+        self.calculation_started = False
+        self.calculate_button = QPushButton(self)
+        self.calculate_button.setText("Begin Calculation")
+        self.calculate_button.clicked.connect(self.start_or_start_calculation)
+        button_layout.addWidget(self.calculate_button)
 
-    np.clip(
-        stimulation_matrix, c.MIN_STIMULATION, c.MAX_STIMULATION, out=stimulation_matrix
-    )
-    print(
-        f"stimulation max: {stimulation_matrix.max()} min: {stimulation_matrix.min()}, mean: {stimulation_matrix.mean()}"
-    )
-    kt_matrix = kt_matrix * c.DECAY_RATE + stimulation_matrix / 100
-    end = perf_counter()
-    print("Simulation finished")
-    print(f"Simulation took {end - start} seconds")
+        layout.addWidget(button_widget)
 
-    global fig, ax
-    ax = ax.ravel()
-    ax[0].imshow(
-        np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
-    )
-    plt.draw()
+        self.kernel = Kernel()
+        self.kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
+        self.fill_figure()
 
-def update_activator_from_textbox(text):
-    try:
-        amplitude, width, distance = [float(x) for x in text.split(",")]
-    except ValueError:
-        print("Invalid input given to activator textbox")
-        print(text)
-        return
+    def fill_figure(self):
+        self.string = "label"
 
-    kernel.update_activator(amplitude, distance, width)
+        self.rows = 2  # reducing rows speeds up textbox interaction
+        self.cols = 2  # reducing cols speeds up textbox interaction
+        self.plot_count = self.rows * self.cols
+        self.gs = gridspec.GridSpec(
+            self.rows,
+            self.cols,
+            left=0.05,
+            right=1 - 0.02,
+            top=1 - 0.04,
+            bottom=0.10,
+            wspace=0.3,
+            hspace=0.4,
+        )
+        self.ax0 = self.fig.add_subplot(self.gs[0])
+        self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
+        self.ax0.set_title("Reaction Diffusion Result")
 
-    # Redraw the figure
-    global fig, ax
-    ax = ax.ravel()
-    ax[1].lines[0].set_ydata(kernel.kernel)
-    ax[1].lines[1].set_ydata(kernel.activator.kernel)
+        self.ax1 = self.fig.add_subplot(self.gs[1])
+        self.ax1.set_title("Kernel (Activator + Inhibitor)")
+        self.ax1.grid(True)
+        self.ax1.plot(self.kernel.kernel, label="Kernel")
+        self.ax1.plot(
+            self.kernel.activator.kernel, label="Activator", linestyle="dashed"
+        )
+        self.ax1.plot(
+            self.kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed"
+        )
+        self.ax1.set_xlim(0, c.KERNEL_SIZE)
+        self.ax1.legend()
+        self.ax1.set_aspect("equal")
 
-    ax[2].lines[0].set_ydata(kernel.fourier)
+        self.ax2 = self.fig.add_subplot(self.gs[2])
+        self.ax2.grid(True)
+        self.ax2.plot(self.kernel.fourier)
+        self.ax2.set_title("Fourier Transform of Kernel")
+        self.ax2.set_xlim(0, c.KERNEL_SIZE)
 
-    integral_text.set_text(f"Integrated Value of the Kernel: {kernel.integral:.3f}")
+    def on_activator_submit(self):
+        text = self.activator_textbox.text()
+        try:
+            amplitude, width, distance = [float(x) for x in text.split(",")]
+            if self.kernel.activator.diff(amplitude, width, distance):
+                self.kernel.update_activator(amplitude, distance, width)
+                # Update the kernel graph
+                self.ax1.cla()
+                self.ax1.set_title("Kernel (Activator + Inhibitor)")
+                self.ax1.grid(True)
+                self.ax1.plot(self.kernel.kernel, label="Kernel")
+                self.ax1.plot(
+                    self.kernel.activator.kernel, label="Activator", linestyle="dashed"
+                )
+                self.ax1.plot(
+                    self.kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed"
+                )
+                self.ax1.set_xlim(0, c.KERNEL_SIZE)
+                self.ax1.legend()
+                self.ax1.set_aspect("equal")
+                # Update the fourier transform
+                self.ax2.cla()
+                self.ax2.grid(True)
+                self.ax2.plot(self.kernel.fourier)
+                self.ax2.set_title("Fourier Transform of Kernel")
+                self.ax2.set_xlim(0, c.KERNEL_SIZE)
 
-    plt.draw()
+                self.fig.canvas.draw_idle()
+        except ValueError:
+            msgbox = QMessageBox(self)
+            msgbox.setText(f"Invalid Activator Input: {text}")
+            msgbox.exec()
 
+    def on_inhibitor_submit(self):
+        text = self.inhibitor_textbox.text()
+        try:
+            amplitude, width, distance = [float(x) for x in text.split(",")]
+            if self.kernel.inhibitor.diff(amplitude, distance, width):
+                self.kernel.update_inhibitor(amplitude, distance, width)
+                # Update the kernel graph
+                self.ax1.cla()
+                self.ax1.set_title("Kernel (Activator + Inhibitor)")
+                self.ax1.grid(True)
+                self.ax1.plot(self.kernel.kernel, label="Kernel")
+                self.ax1.plot(
+                    self.kernel.activator.kernel, label="Activator", linestyle="dashed"
+                )
+                self.ax1.plot(
+                    self.kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed"
+                )
+                self.ax1.set_xlim(0, c.KERNEL_SIZE)
+                self.ax1.legend()
+                self.ax1.set_aspect("equal")
+                # Update the fourier transform
+                self.ax2.cla()
+                self.ax2.grid(True)
+                self.ax2.plot(self.kernel.fourier)
+                self.ax2.set_title("Fourier Transform of Kernel")
+                self.ax2.set_xlim(0, c.KERNEL_SIZE)
 
-def update_inhibitor_from_textbox(text):
-    try:
-        amplitude, width, distance = [float(x) for x in text.split(",")]
-    except ValueError:
-        print("Invalid input given to inhibitor textbox")
-        print(text)
-        return
+                self.fig.canvas.draw_idle()
+        except ValueError:
+            msgbox = QMessageBox(self)
+            msgbox.setText(f"Invalid Inhibitor Input: {text}")
+            msgbox.exec()
 
-    kernel.update_inhibitor(amplitude, distance, width)
+    def randomize_matrix(self):
+        self.kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
-    # Redraw the figure
-    global fig, ax
-    ax = ax.ravel()
-    ax[1].lines[0].set_ydata(kernel.kernel)
-    ax[1].lines[2].set_ydata(kernel.inhibitor.kernel)
+        self.ax0.cla()
+        self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
+        self.ax0.set_title("Reaction Diffusion Result")
+        self.fig.canvas.draw_idle()
 
-    ax[2].lines[0].set_ydata(kernel.fourier)
+    def start_or_start_calculation(self):
+        if self.calculate_button.text() == "Begin Calculation":
+            self.calculate_button.setText("Stop Calculation")
+            self.interval = SetInterval(0.5, self.calculate_stimulation_received)
+        else:
+            self.calculate_button.setText("Begin Calculation")
+            self.interval.cancel()
 
-    integral_text.set_text(f"Integrated Value of the Kernel: {kernel.integral:.3f}")
+    def calculate_stimulation_received(self):
+        start = perf_counter()
+        stimulation_matrix = compute_stimulation(self.kernel.cache, self.kt_matrix)
+        np.clip(
+            stimulation_matrix,
+            c.MIN_STIMULATION,
+            c.MAX_STIMULATION,
+            out=stimulation_matrix,
+        )
+        print(
+            f"stimulation max: {stimulation_matrix.max()} min: {stimulation_matrix.min()}, mean: {stimulation_matrix.mean()}"
+        )
+        self.kt_matrix = self.kt_matrix * c.DECAY_RATE + stimulation_matrix / 100
+        end = perf_counter()
+        print(f"Simulation took {end - start} seconds")
 
-    plt.draw()
-
-
-def randomize(event):
-    global kt_matrix
-    global fig, ax
-
-    kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
-
-    ax = ax.ravel()
-    ax[0].imshow(
-        np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
-    )
-    plt.draw()
+        self.ax0.cla()
+        self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
+        self.ax0.set_title("Reaction Diffusion Result")
+        self.fig.canvas.draw_idle()
 
 
 if __name__ == "__main__":
-    ax[0][0].set_title("Reaction Diffusion Result")
-    ax[0][0].imshow(
-        np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)), interpolation="none"
-    )
-
-    ax[0][1].set_title("Kernel (Activator + Inhibitor)")
-    ax[0][1].set_xlim(0, c.KERNEL_SIZE)
-    ax[0][1].grid(True)
-    ax[0][1].plot(x, kernel.kernel, label="Kernel")
-    ax[0][1].plot(x, kernel.activator.kernel, label="Activator", linestyle="dashed")
-    ax[0][1].plot(x, kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed")
-    ax[0][1].legend()
-
-    ax[1][0].set_title("Fourier Transform of the Kernel")
-    ax[1][0].grid(True)
-    ax[1][0].plot(kernel.fourier)
-    ax[1][0].set_xlim(0, 20)
-
-    ax[1][1].axis("off")
-
-    # Interactive widgets and buttons
-    ax_save = plt.axes([0.5, 0.4, 0.1, 0.075])
-    button_save = Button(ax_save, "Save Figures")
-    button_save.on_clicked(save_figures)
-
-    ax_compute = plt.axes([0.6, 0.4, 0.1, 0.075])
-    button_compute = Button(ax_compute, "Start Calculation")
-    button_compute.on_clicked(simulate)
-
-    ax_repeat = plt.axes([0.7, 0.4, 0.1, 0.075])
-    button_repeat = Button(ax_repeat, "Calculate x10")
-    button_repeat.on_clicked(lambda e: [simulate(e) for _ in range(10)])
-
-    ax_randomize = plt.axes([0.8, 0.4, 0.1, 0.075])
-    button_randomize = Button(ax_randomize, "Randomize")
-    button_randomize.on_clicked(randomize)
-
-    ax_activator_input = plt.axes([0.65, 0.3, 0.1, 0.075])
-    activator_params = TextBox(ax_activator_input, "A(x) (Amplitude, Width, Distance):")
-    activator_params.on_submit(update_activator_from_textbox)
-
-    ax_inhibitor_input = plt.axes([0.65, 0.2, 0.1, 0.075])
-    inhibitor_params = TextBox(ax_inhibitor_input, "I(x) (Amplitude, Width, Distance):")
-    inhibitor_params.on_submit(update_inhibitor_from_textbox)
-
-    plt.show()
+    qapp = QtWidgets.QApplication(sys.argv)
+    app = KTMethod()
+    app.show()
+    qapp.exec_()
