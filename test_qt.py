@@ -1,16 +1,17 @@
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from PyQt5.QtWidgets import QHBoxLayout, QMessageBox, QPushButton
 import numpy as np
 import sys
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar,
 )
+from time import perf_counter
 from matplotlib.backends.qt_compat import QtWidgets
 import matplotlib.gridspec as gridspec
 from matplotlib.figure import Figure
 import numpy as np
 
-from kernel_helpers import Kernel
+from kernel_helpers import Kernel, compute_stimulation
 import constants as c
 
 
@@ -41,6 +42,21 @@ class Textbox_Demo(QtWidgets.QMainWindow):
         textlayout.addWidget(self.inhibitor_textbox)
 
         layout.addWidget(self._textwidget)
+
+        button_widget = QtWidgets.QWidget()
+        button_layout = QtWidgets.QHBoxLayout(button_widget)
+        self.randomize_button = QPushButton(self)
+        self.randomize_button.setText("Randomize Matrix")
+        self.randomize_button.clicked.connect(self.randomize_matrix)
+        button_layout.addWidget(self.randomize_button)
+
+        self.calculation_started = False
+        self.calculate_button = QPushButton(self)
+        self.calculate_button.setText("Begin Calculation")
+        self.calculate_button.clicked.connect(self.start_or_start_calculation)
+        button_layout.addWidget(self.calculate_button)
+
+        layout.addWidget(button_widget)
 
         self.kernel = Kernel()
         self.kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
@@ -152,6 +168,37 @@ class Textbox_Demo(QtWidgets.QMainWindow):
             msgbox = QMessageBox(self)
             msgbox.setText(f"Invalid Inhibitor Input: {text}")
             msgbox.exec()
+
+    def randomize_matrix(self):
+        self.kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
+
+        self.ax0.cla()
+        self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
+        self.ax0.set_title("Reaction Diffusion Result")
+        self.fig.canvas.draw_idle()
+
+    def start_or_start_calculation(self):
+        print("Starting simulation")
+        start = perf_counter()
+        stimulation_matrix = compute_stimulation(self.kernel.cache, self.kt_matrix)
+        np.clip(
+            stimulation_matrix,
+            c.MIN_STIMULATION,
+            c.MAX_STIMULATION,
+            out=stimulation_matrix,
+        )
+        print(
+            f"stimulation max: {stimulation_matrix.max()} min: {stimulation_matrix.min()}, mean: {stimulation_matrix.mean()}"
+        )
+        self.kt_matrix = self.kt_matrix * c.DECAY_RATE + stimulation_matrix / 100
+        end = perf_counter()
+        print("Simulation finished")
+        print(f"Simulation took {end - start} seconds")
+
+        self.ax0.cla()
+        self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
+        self.ax0.set_title("Reaction Diffusion Result")
+        self.fig.canvas.draw_idle()
 
 
 if __name__ == "__main__":

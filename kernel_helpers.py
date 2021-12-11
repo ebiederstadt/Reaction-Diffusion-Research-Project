@@ -101,24 +101,27 @@ class Kernel:
         self.integrate()
         self.fourier = self.compute_fourier()
 
-    @njit
-    def compute_stimulation(self, kt_matrix: np.ndarray):
-        stimulation_matrix = np.zeros(c.MATRIX_SIZE ** 2)
-        kernel_width = c.KERNEL_SIZE * 2
-        indexMat = 0
-        for j in range(c.MATRIX_SIZE):
-            yy = j + c.MATRIX_SIZE - c.KERNEL_SIZE
-            for i in range(c.MATRIX_SIZE):
-                xx = i + c.MATRIX_SIZE - c.KERNEL_SIZE
-                matValue = kt_matrix[indexMat]
-                indexMat = indexMat + 1
-                indexK = 0
-                for q in range(kernel_width):
-                    y = (yy + q) % c.MATRIX_SIZE
-                    for p in range(kernel_width):
-                        x = (xx + p) % c.MATRIX_SIZE
-                        index = c.MATRIX_SIZE * y + x
-                        stimulation_matrix[index] += self.cache[indexK] * matValue
-                        indexK = indexK + 1
 
-        return stimulation_matrix
+@njit
+def compute_stimulation(kernel_cache: np.ndarray, kt_matrix: np.ndarray):
+    """This method is JIT compiled to machine code, and runs much faster as a result"""
+
+    stimulation_matrix = np.zeros(c.MATRIX_SIZE ** 2)
+    kernel_width = c.KERNEL_SIZE * 2
+    indexMat = 0
+    for j in range(c.MATRIX_SIZE):
+        yy = j + c.MATRIX_SIZE - c.KERNEL_SIZE
+        for i in range(c.MATRIX_SIZE):
+            xx = i + c.MATRIX_SIZE - c.KERNEL_SIZE
+            matValue = kt_matrix[indexMat]
+            indexMat = indexMat + 1
+            indexK = 0
+            for q in range(kernel_width):
+                y = (yy + q) % c.MATRIX_SIZE
+                for p in range(kernel_width):
+                    x = (xx + p) % c.MATRIX_SIZE
+                    index = c.MATRIX_SIZE * y + x
+                    stimulation_matrix[index] += kernel_cache[indexK] * matValue
+                    indexK = indexK + 1
+
+    return stimulation_matrix

@@ -9,7 +9,7 @@ from matplotlib.widgets import Button, TextBox
 
 import constants as c
 from image_processing import write_figures
-from kernel_helpers import Kernel
+from kernel_helpers import Kernel, compute_stimulation
 
 
 x = np.linspace(0, c.KERNEL_SIZE)
@@ -36,7 +36,7 @@ def simulate(event):
 
     print("Starting simulation")
     start = perf_counter()
-    stimulation_matrix = kernel.compute_stimulation(kt_matrix)
+    stimulation_matrix = compute_stimulation(kernel.cache, kt_matrix)
 
     np.clip(
         stimulation_matrix, c.MIN_STIMULATION, c.MAX_STIMULATION, out=stimulation_matrix
