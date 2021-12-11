@@ -1,18 +1,17 @@
-from PyQt5.QtWidgets import QHBoxLayout, QMessageBox, QPushButton
-import numpy as np
 import sys
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar,
-)
 from time import perf_counter
-from matplotlib.backends.qt_compat import QtWidgets
-import matplotlib.gridspec as gridspec
-from matplotlib.figure import Figure
-import numpy as np
 
-from kernel_helpers import Kernel, compute_stimulation
+import matplotlib.gridspec as gridspec
+import numpy as np
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.qt_compat import QtWidgets
+from matplotlib.figure import Figure
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QPushButton
+
 import constants as c
+from interval import SetInterval
+from kernel_helpers import Kernel, compute_stimulation
 
 
 class KTMethod(QMainWindow):

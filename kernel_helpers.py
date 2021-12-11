@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from numpy.lib.function_base import diff
-from scipy.integrate import simpson
-from scipy.fft import dct
+
 import numpy as np
 from numba import njit
+from numpy.lib.function_base import diff
+from scipy.fft import dct
+from scipy.integrate import simpson
 
 import constants as c
 

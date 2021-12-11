@@ -11,7 +11,6 @@ import constants as c
 from image_processing import write_figures
 from kernel_helpers import Kernel, compute_stimulation
 
-
 x = np.linspace(0, c.KERNEL_SIZE)
 
 # Starting values for the kernel and the simulation matrix
