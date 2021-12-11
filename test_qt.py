@@ -15,7 +15,7 @@ from kernel_helpers import Kernel, compute_stimulation
 import constants as c
 
 
-class Textbox_Demo(QtWidgets.QMainWindow):
+class KTMethod(QMainWindow):
     def __init__(self):
         super().__init__()
         self._main = QtWidgets.QWidget()
@@ -178,7 +178,14 @@ class Textbox_Demo(QtWidgets.QMainWindow):
         self.fig.canvas.draw_idle()
 
     def start_or_start_calculation(self):
-        print("Starting simulation")
+        if self.calculate_button.text() == "Begin Calculation":
+            self.calculate_button.setText("Stop Calculation")
+            self.interval = SetInterval(0.5, self.calculate_stimulation_received)
+        else:
+            self.calculate_button.setText("Begin Calculation")
+            self.interval.cancel()
+
+    def calculate_stimulation_received(self):
         start = perf_counter()
         stimulation_matrix = compute_stimulation(self.kernel.cache, self.kt_matrix)
         np.clip(
@@ -192,7 +199,6 @@ class Textbox_Demo(QtWidgets.QMainWindow):
         )
         self.kt_matrix = self.kt_matrix * c.DECAY_RATE + stimulation_matrix / 100
         end = perf_counter()
-        print("Simulation finished")
         print(f"Simulation took {end - start} seconds")
 
         self.ax0.cla()
@@ -203,6 +209,6 @@ class Textbox_Demo(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     qapp = QtWidgets.QApplication(sys.argv)
-    app = Textbox_Demo()
+    app = KTMethod()
     app.show()
     qapp.exec_()
