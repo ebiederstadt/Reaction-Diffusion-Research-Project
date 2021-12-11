@@ -29,7 +29,7 @@ class KernelPortion:
         return (
             self.amplitude
             / np.sqrt(2 * np.pi)
-            * np.exp(-(((x - self.distance) / self.width) ** 2 / 2))
+            * np.exp(-(np.square((x - self.distance) / self.width) / 2))
         )
 
     def compute_at_given_distance(self, distance: float) -> float:
@@ -101,6 +101,11 @@ class Kernel:
         self.update_cache()
         self.integrate()
         self.fourier = self.compute_fourier()
+
+    def compute_2d_integral(self):
+        """The 2D integral of the kernel is just the sum of the 2D kernel"""
+
+        return self.cache.sum()
 
 
 @njit

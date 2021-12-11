@@ -21,11 +21,12 @@ def write_kernel(kernel: Kernel) -> int:
             kernel.inhibitor.amplitude,
             kernel.inhibitor.distance,
             kernel.inhibitor.width,
+            kernel.compute_2d_integral(),
         ]
 
         cursor.execute(
-            """INSERT INTO info(activator_amplitude, activator_distance, activator_width, inhibitor_amplitude, inhibitor_distance, inhibitor_width)
-            VALUES (?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO info(activator_amplitude, activator_distance, activator_width, inhibitor_amplitude, inhibitor_distance, inhibitor_width, integral_2d)
+            VALUES (?, ?, ?, ?, ?, ?, ?)""",
             params,
         )
         connection.commit()
