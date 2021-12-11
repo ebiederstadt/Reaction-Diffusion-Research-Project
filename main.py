@@ -18,6 +18,7 @@ from image_processing import write_figures
 class KTMethod(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("KT Method Simulator")
         self._main = QtWidgets.QWidget()
         self.setCentralWidget(self._main)
         layout = QtWidgets.QVBoxLayout(self._main)
@@ -63,6 +64,7 @@ class KTMethod(QMainWindow):
 
         layout.addWidget(button_widget)
 
+        self.x = np.linspace(0, c.KERNEL_SIZE)
         self.kernel = Kernel()
         self.kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
@@ -118,12 +120,18 @@ class KTMethod(QMainWindow):
                 self.ax1.cla()
                 self.ax1.set_title("Kernel (Activator + Inhibitor)")
                 self.ax1.grid(True)
-                self.ax1.plot(self.kernel.kernel, label="Kernel")
+                self.ax1.plot(self.x, self.kernel.kernel, label="Kernel")
                 self.ax1.plot(
-                    self.kernel.activator.kernel, label="Activator", linestyle="dashed"
+                    self.x,
+                    self.kernel.activator.kernel,
+                    label="Activator",
+                    linestyle="dashed",
                 )
                 self.ax1.plot(
-                    self.kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed"
+                    self.x,
+                    self.kernel.inhibitor.kernel,
+                    label="Inhibitor",
+                    linestyle="dashed",
                 )
                 self.ax1.set_xlim(0, c.KERNEL_SIZE)
                 self.ax1.legend()
@@ -151,12 +159,18 @@ class KTMethod(QMainWindow):
                 self.ax1.cla()
                 self.ax1.set_title("Kernel (Activator + Inhibitor)")
                 self.ax1.grid(True)
-                self.ax1.plot(self.kernel.kernel, label="Kernel")
+                self.ax1.plot(self.x, self.kernel.kernel, label="Kernel")
                 self.ax1.plot(
-                    self.kernel.activator.kernel, label="Activator", linestyle="dashed"
+                    self.x,
+                    self.kernel.activator.kernel,
+                    label="Activator",
+                    linestyle="dashed",
                 )
                 self.ax1.plot(
-                    self.kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed"
+                    self.x,
+                    self.kernel.inhibitor.kernel,
+                    label="Inhibitor",
+                    linestyle="dashed",
                 )
                 self.ax1.set_xlim(0, c.KERNEL_SIZE)
                 self.ax1.legend()
