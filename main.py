@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QPushButton
 import constants as c
 from interval import SetInterval
 from kernel_helpers import Kernel, compute_stimulation
+from image_processing import write_figures
 
 
 class KTMethod(QMainWindow):
@@ -54,6 +55,11 @@ class KTMethod(QMainWindow):
         self.calculate_button.setText("Begin Calculation")
         self.calculate_button.clicked.connect(self.start_or_start_calculation)
         button_layout.addWidget(self.calculate_button)
+
+        self.save_button = QPushButton(self)
+        self.save_button.setText("Save Figures")
+        self.save_button.clicked.connect(self.save_figures)
+        button_layout.addWidget(self.save_button)
 
         layout.addWidget(button_widget)
 
@@ -204,6 +210,9 @@ class KTMethod(QMainWindow):
         self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
         self.ax0.set_title("Reaction Diffusion Result")
         self.fig.canvas.draw_idle()
+
+    def save_figures(self):
+        write_figures(self.kt_matrix, self.kernel)
 
 
 if __name__ == "__main__":
