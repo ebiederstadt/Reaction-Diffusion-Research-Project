@@ -20,23 +20,6 @@ def write_figures(kt_matrix: np.ndarray, kernel: Kernel):
     save_fourier(kernel.fourier, path)
 
 
-def update_csv(timestamp, activator, inhibitor, kernel_integral):
-    with open(os.path.join("images", "info.csv"), "a") as file:
-        writer = csv.writer(file, delimiter=",")
-        writer.writerow(
-            [
-                timestamp,
-                activator.amplitude,
-                activator.distance,
-                activator.width,
-                inhibitor.amplitude,
-                inhibitor.distance,
-                inhibitor.width,
-                f"{kernel_integral:.3f}",
-            ]
-        )
-
-
 def save_rd_matrix(kt_matrix: np.ndarray, path: str):
     resized_matrix = np.reshape(kt_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE))
 
