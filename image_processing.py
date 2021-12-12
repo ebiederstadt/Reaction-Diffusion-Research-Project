@@ -1,10 +1,7 @@
-import csv
 import os
-from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
 
 import constants as c
 from db import write_kernel

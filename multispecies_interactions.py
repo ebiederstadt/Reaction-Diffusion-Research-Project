@@ -1,17 +1,23 @@
+import os
 import sys
 from time import perf_counter
+from typing import Optional
 
 import matplotlib.colors as colors
 import matplotlib.patches as patches
 import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+from numba.core.targetconfig import Option
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
+from matplotlib.axes._axes import Axes
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QPushButton
 
 import constants as c
+from db import write_kernel_multispecies
 from interval import SetInterval
 from kernel_helpers import Kernel, ConstantKernel, compute_stimulation
 
@@ -110,8 +116,11 @@ class KTMethod(QMainWindow):
         self.ax2 = self.fig.add_subplot(self.gs[2])
         self._plot_kernel()
 
-    def _plot_kt_matrices(self):
+    def _plot_kt_matrices(self, axis: Optional[Axes] = None) -> None:
         """Plot the KT Matrices on top of each other."""
+
+        if not axis:
+            axis = self.ax0
 
         # Transparency method copied from stackoverflow
         # https://stackoverflow.com/questions/10127284/overlay-imshow-plots-in-matplotlib
@@ -126,17 +135,17 @@ class KTMethod(QMainWindow):
         alphas = np.linspace(0, 0.6, cmap2.N + 3)
         cmap2._lut[:, -1] = alphas
 
-        self.ax0.imshow(
+        axis.imshow(
             np.reshape(self.s1_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)),
             interpolation="none",
             cmap=cmap1,
         )
-        im = self.ax0.imshow(
+        axis.imshow(
             np.reshape(self.s2_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)),
             interpolation="none",
             cmap=cmap2,
         )
-        self.ax0.set_title("Reaction Diffusion Result")
+        axis.set_title("Reaction Diffusion Result")
 
         # Legend
         legend_patches = [
@@ -144,29 +153,36 @@ class KTMethod(QMainWindow):
             patches.Patch(color="blue", label="Species 2"),
         ]
         # put those patched as legend-handles into the legend
-        self.ax0.legend(
+        axis.legend(
             handles=legend_patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0
         )
 
-    def _plot_kernel(self):
+    def _plot_kernel(
+        self, kernel_axis: Optional[Axes] = None, fourier_axis: Optional[Axes] = None
+    ) -> None:
         """Plot the kernel and the fourier transform of the kernel"""
 
-        self.ax1.set_title("Kernel (Activator + Inhibitor)")
-        self.ax1.plot(self.s1_environment.kernel, label="s1 and the environment")
-        self.ax1.plot(self.s2_environment.kernel, label="s2 and the environment")
-        self.ax1.plot(self.s2_s1.kernel, label="Effect of s2 on s1")
-        self.ax1.plot(self.s1_s2.kernel, label="Effect of s1 on s2")
-        self.ax1.grid(True)
-        self.ax1.set_xlim(0, c.KERNEL_SIZE)
-        self.ax1.legend()
-        self.ax1.set_aspect("equal")
+        if not kernel_axis:
+            kernel_axis = self.ax1
+        if not fourier_axis:
+            fourier_axis = self.ax2
 
-        self.ax2.grid(True)
-        self.ax2.plot(self.s1_s2.fourier, label="Effect of s2 on s1")
-        self.ax2.plot(self.s2_s1.fourier, label="Effect of s1 on s2")
-        self.ax2.set_title("Fourier Transform of Kernels")
-        self.ax2.set_xlim(0, c.KERNEL_SIZE)
-        self.ax2.legend()
+        kernel_axis.set_title("Kernel (Activator + Inhibitor)")
+        kernel_axis.plot(self.s1_environment.kernel, label="s1 and the environment")
+        kernel_axis.plot(self.s2_environment.kernel, label="s2 and the environment")
+        kernel_axis.plot(self.s2_s1.kernel, label="Effect of s2 on s1")
+        kernel_axis.plot(self.s1_s2.kernel, label="Effect of s1 on s2")
+        kernel_axis.grid(True)
+        kernel_axis.set_xlim(0, c.KERNEL_SIZE)
+        kernel_axis.legend()
+        kernel_axis.set_aspect("equal")
+
+        fourier_axis.grid(True)
+        fourier_axis.plot(self.s1_s2.fourier, label="Effect of s2 on s1")
+        fourier_axis.plot(self.s2_s1.fourier, label="Effect of s1 on s2")
+        fourier_axis.set_title("Fourier Transform of Kernels")
+        fourier_axis.set_xlim(0, c.KERNEL_SIZE)
+        fourier_axis.legend()
 
     def on_activator_submit(self):
         text = self.activator_textbox.text()
@@ -245,7 +261,22 @@ class KTMethod(QMainWindow):
         self.fig.canvas.draw_idle()
 
     def save_figures(self):
-        print("FIXME: Implement Save Figures!")
+        id = write_kernel_multispecies(self.s2_s1, self.s1_s2)
+        path = os.path.join("images", f"multispecies_{id}")
+        os.mkdir(path)
+
+        fig, ax = plt.subplots()
+        self._plot_kt_matrices(ax)
+        fig.savefig(os.path.join(path, "reaction_diffusion_result.png"))
+        plt.close(fig)
+
+        kernel_fig, kernel_axis = plt.subplots()
+        fourier_fig, fourier_axis = plt.subplots()
+        self._plot_kernel(kernel_axis, fourier_axis)
+        kernel_fig.savefig(os.path.join(path, "kernels.png"))
+        plt.close(kernel_fig)
+        fourier_fig.savefig(os.path.join(path, "fourier.png"))
+        plt.close(fourier_fig)
 
 
 if __name__ == "__main__":
