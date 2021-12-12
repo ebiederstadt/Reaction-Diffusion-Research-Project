@@ -1,3 +1,4 @@
+from enum import Enum
 import sys
 from time import perf_counter
 
@@ -24,6 +25,12 @@ from interval import SetInterval
 from kernel_helpers import Kernel, compute_stimulation
 from image_processing import write_figures
 from widgets import DoubleSlider
+
+
+class UpdateOptions(Enum):
+    AMPLITUDE = 0
+    WIDTH = 1
+    DISTANCE = 3
 
 
 class KTMethod(QMainWindow):
@@ -89,20 +96,44 @@ class KTMethod(QMainWindow):
         activator_amplitude = QLabel("Activator Amplitude")
         amplitude_layout.addWidget(activator_amplitude)
 
-        self.activator_amplitude_slider = DoubleSlider(Qt.Horizontal)
-        self.activator_amplitude_slider.setMinimum(-40)
-        self.activator_amplitude_slider.setMaximum(40)
-        self.activator_amplitude_slider.setValue(self.kernel.activator.amplitude)
-        amplitude_layout.addWidget(self.activator_amplitude_slider)
+        activator_amplitude_slider = DoubleSlider(Qt.Horizontal)
+        activator_amplitude_slider.setMinimum(-40)
+        activator_amplitude_slider.setMaximum(40)
+        activator_amplitude_slider.setValue(self.kernel.activator.amplitude)
+        activator_amplitude_slider.valueChanged.connect(
+            lambda: self.update_activator(
+                activator_amplitude_slider.value(), UpdateOptions.AMPLITUDE
+            )
+        )
+        activator_amplitude_slider.sliderReleased.connect(
+            lambda: self.update_activator(
+                activator_amplitude_slider.value(),
+                UpdateOptions.AMPLITUDE,
+                do_full_update=True,
+            )
+        )
+        amplitude_layout.addWidget(activator_amplitude_slider)
 
         inhibitor_amplitude = QLabel("Inhibitor Amplitude")
         amplitude_layout.addWidget(inhibitor_amplitude)
 
-        self.inhibitor_amplitude_slider = DoubleSlider(Qt.Horizontal)
-        self.inhibitor_amplitude_slider.setMinimum(-40)
-        self.inhibitor_amplitude_slider.setMaximum(40)
-        self.inhibitor_amplitude_slider.setValue(self.kernel.inhibitor.amplitude)
-        amplitude_layout.addWidget(self.inhibitor_amplitude_slider)
+        inhibitor_amplitude_slider = DoubleSlider(Qt.Horizontal)
+        inhibitor_amplitude_slider.setMinimum(-40)
+        inhibitor_amplitude_slider.setMaximum(40)
+        inhibitor_amplitude_slider.setValue(self.kernel.inhibitor.amplitude)
+        inhibitor_amplitude_slider.valueChanged.connect(
+            lambda: self.update_inhibitor(
+                inhibitor_amplitude_slider.value(), UpdateOptions.AMPLITUDE
+            )
+        )
+        inhibitor_amplitude_slider.sliderReleased.connect(
+            lambda: self.update_inhibitor(
+                inhibitor_amplitude_slider.value(),
+                UpdateOptions.AMPLITUDE,
+                do_full_update=True,
+            )
+        )
+        amplitude_layout.addWidget(inhibitor_amplitude_slider)
 
         slider_layout.addWidget(amplitude_widget)
 
@@ -112,20 +143,44 @@ class KTMethod(QMainWindow):
         activator_width = QLabel("Activator Width")
         width_layout.addWidget(activator_width)
 
-        self.activator_width_slider = DoubleSlider(Qt.Horizontal)
-        self.activator_width_slider.setMinimum(0)
-        self.activator_width_slider.setMaximum(10)
-        self.activator_width_slider.setValue(self.kernel.activator.width)
-        width_layout.addWidget(self.activator_width_slider)
+        activator_width_slider = DoubleSlider(Qt.Horizontal)
+        activator_width_slider.setMinimum(0)
+        activator_width_slider.setMaximum(10)
+        activator_width_slider.setValue(self.kernel.activator.width)
+        activator_width_slider.valueChanged.connect(
+            lambda: self.update_activator(
+                activator_width_slider.value(), UpdateOptions.WIDTH
+            )
+        )
+        activator_width_slider.sliderReleased.connect(
+            lambda: self.update_activator(
+                activator_width_slider.value(),
+                UpdateOptions.WIDTH,
+                do_full_update=True,
+            )
+        )
+        width_layout.addWidget(activator_width_slider)
 
         inhibitor_width = QLabel("Inhibitor Width")
         width_layout.addWidget(inhibitor_width)
 
-        self.inhibitor_width_slider = DoubleSlider(Qt.Horizontal)
-        self.inhibitor_width_slider.setMinimum(0)
-        self.inhibitor_width_slider.setMaximum(10)
-        self.inhibitor_width_slider.setValue(self.kernel.inhibitor.width)
-        width_layout.addWidget(self.inhibitor_width_slider)
+        inhibitor_width_slider = DoubleSlider(Qt.Horizontal)
+        inhibitor_width_slider.setMinimum(0)
+        inhibitor_width_slider.setMaximum(10)
+        inhibitor_width_slider.setValue(self.kernel.inhibitor.width)
+        inhibitor_width_slider.valueChanged.connect(
+            lambda: self.update_inhibitor(
+                inhibitor_width_slider.value(), UpdateOptions.WIDTH
+            )
+        )
+        inhibitor_width_slider.sliderReleased.connect(
+            lambda: self.update_inhibitor(
+                inhibitor_width_slider.value(),
+                UpdateOptions.WIDTH,
+                do_full_update=True,
+            )
+        )
+        width_layout.addWidget(inhibitor_width_slider)
 
         slider_layout.addWidget(width_widget)
 
@@ -135,20 +190,44 @@ class KTMethod(QMainWindow):
         activator_distance = QLabel("Activator Distance")
         distance_layout.addWidget(activator_distance)
 
-        self.activator_distance_slider = DoubleSlider(Qt.Horizontal)
-        self.activator_distance_slider.setMinimum(0)
-        self.activator_distance_slider.setMaximum(20)
-        self.activator_distance_slider.setValue(self.kernel.activator.distance)
-        distance_layout.addWidget(self.activator_distance_slider)
+        activator_distance_slider = DoubleSlider(Qt.Horizontal)
+        activator_distance_slider.setMinimum(0)
+        activator_distance_slider.setMaximum(20)
+        activator_distance_slider.setValue(self.kernel.activator.distance)
+        activator_distance_slider.valueChanged.connect(
+            lambda: self.update_activator(
+                activator_distance_slider.value(), UpdateOptions.DISTANCE
+            )
+        )
+        inhibitor_width_slider.sliderReleased.connect(
+            lambda: self.update_activator(
+                inhibitor_width_slider.value(),
+                UpdateOptions.WIDTH,
+                do_full_update=True,
+            )
+        )
+        distance_layout.addWidget(activator_distance_slider)
 
         inhibitor_distance = QLabel("Inhibitor Distance")
         distance_layout.addWidget(inhibitor_distance)
 
-        self.inhibitor_distance_slider = DoubleSlider(Qt.Horizontal)
-        self.inhibitor_distance_slider.setMinimum(0)
-        self.inhibitor_distance_slider.setMaximum(20)
-        self.inhibitor_distance_slider.setValue(self.kernel.inhibitor.distance)
-        distance_layout.addWidget(self.inhibitor_distance_slider)
+        inhibitor_distance_slider = DoubleSlider(Qt.Horizontal)
+        inhibitor_distance_slider.setMinimum(0)
+        inhibitor_distance_slider.setMaximum(20)
+        inhibitor_distance_slider.setValue(self.kernel.inhibitor.distance)
+        inhibitor_distance_slider.valueChanged.connect(
+            lambda: self.update_inhibitor(
+                inhibitor_distance_slider.value(), UpdateOptions.DISTANCE
+            )
+        )
+        inhibitor_distance_slider.sliderReleased.connect(
+            lambda: self.update_inhibitor(
+                inhibitor_distance_slider.value(),
+                UpdateOptions.DISTANCE,
+                do_full_update=True,
+            )
+        )
+        distance_layout.addWidget(inhibitor_distance_slider)
 
         slider_layout.addWidget(distance_widget)
 
@@ -194,7 +273,6 @@ class KTMethod(QMainWindow):
         )
         self.ax1.set_xlim(0, c.KERNEL_SIZE)
         self.ax1.legend()
-        self.ax1.set_aspect("equal")
 
         self.ax2.grid(True)
         self.ax2.plot(self.kernel.fourier)
@@ -230,6 +308,54 @@ class KTMethod(QMainWindow):
             msgbox = QMessageBox(self)
             msgbox.setText(f"Invalid Inhibitor Input: {text}")
             msgbox.exec()
+
+    def update_activator(self, value: float, what: UpdateOptions, do_full_update=False):
+        amplitude = self.kernel.activator.amplitude
+        width = self.kernel.activator.width
+        distance = self.kernel.activator.distance
+
+        if what == UpdateOptions.AMPLITUDE:
+            amplitude = value
+        elif what == UpdateOptions.WIDTH:
+            width = value
+        elif what == UpdateOptions.DISTANCE:
+            distance = value
+        else:
+            raise ValueError("Invalid value when updating activator!")
+
+        if self.kernel.activator.diff(amplitude, distance, width):
+            if do_full_update:
+                self.kernel.update_activator(amplitude, distance, width)
+            else:
+                self.kernel.partial_update_activator(amplitude, distance, width)
+            self.ax1.cla()
+            self.ax2.cla()
+            self._plot_kernel()
+            self.fig.canvas.draw_idle()
+
+    def update_inhibitor(self, value: float, what: UpdateOptions, do_full_update=False):
+        amplitude = self.kernel.inhibitor.amplitude
+        width = self.kernel.inhibitor.width
+        distance = self.kernel.inhibitor.distance
+
+        if what == UpdateOptions.AMPLITUDE:
+            amplitude = value
+        elif what == UpdateOptions.WIDTH:
+            width = value
+        elif what == UpdateOptions.DISTANCE:
+            distance = value
+        else:
+            raise ValueError("Invalid value when updating inhibitor!")
+
+        if self.kernel.inhibitor.diff(amplitude, distance, width):
+            if do_full_update:
+                self.kernel.update_inhibitor(amplitude, distance, width)
+            else:
+                self.kernel.partial_update_activator(amplitude, distance, width)
+            self.ax1.cla()
+            self.ax2.cla()
+            self._plot_kernel()
+            self.fig.canvas.draw_idle()
 
     def randomize_matrix(self):
         self.kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)

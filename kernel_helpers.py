@@ -97,6 +97,10 @@ class Kernel:
 
         print(f"2D Integral of Kernel: {self.compute_2d_integral()}")
 
+    def partial_update_activator(self, amplitude: float, distance: float, width: float):
+        self.activator.update(amplitude, distance, width)
+        self.kernel = self.activator.kernel + self.inhibitor.kernel
+
     def update_inhibitor(self, amplitude: float, distance: float, width: float):
         self.inhibitor.update(amplitude, distance, width)
         self.kernel = self.activator.kernel + self.inhibitor.kernel
@@ -105,6 +109,10 @@ class Kernel:
         self.fourier = self.compute_fourier()
 
         print(f"2D Integral of Kernel: {self.compute_2d_integral()}")
+
+    def parital_update_inhibitor(self, amplitude: float, distance: float, width: float):
+        self.inhibitor.update(amplitude, distance, width)
+        self.kernel = self.activator.kernel + self.inhibitor.kernel
 
     def compute_2d_integral(self):
         """The 2D integral of the kernel is just the sum of the 2D kernel"""
