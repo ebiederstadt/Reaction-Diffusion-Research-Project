@@ -1,8 +1,8 @@
 import sys
 from time import perf_counter
 
+import matplotlib.colors as colors
 import matplotlib.gridspec as gridspec
-from numba.core.errors import ConstantInferenceError
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -75,10 +75,9 @@ class KTMethod(QMainWindow):
         self.s1_s2 = Kernel()  # The effect of s1 on s2
         self.s2_s1 = Kernel()  # The effect of s2 on s1
 
-        # To start, we will have species 1 dominate the landscape
-        # Over time, species 2 might compete with species 1
-        self.s1_matrix = np.ones(c.MATRIX_SIZE * c.MATRIX_SIZE)
-        self.s2_matrix = np.zeros(c.MATRIX_SIZE)
+        # Initially, the two species are exactly opposite to each other
+        self.s1_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
+        self.s2_matrix = 1 - self.s1_matrix
 
         self.fill_figure()
 
@@ -99,8 +98,7 @@ class KTMethod(QMainWindow):
             hspace=0.4,
         )
         self.ax0 = self.fig.add_subplot(self.gs[0])
-        self.ax0.imshow(np.reshape(self.s1_matrix, (200, 200)), interpolation="none")
-        self.ax0.set_title("Reaction Diffusion Result")
+        self._plot_kt_matrices()
 
         self.ax1 = self.fig.add_subplot(self.gs[1])
         self.ax1.set_title("Kernel Functions")
@@ -118,6 +116,34 @@ class KTMethod(QMainWindow):
         self.ax2.plot(self.s1_environment.fourier)
         self.ax2.set_title("Fourier Transform of Kernel")
         self.ax2.set_xlim(0, c.KERNEL_SIZE)
+
+    def _plot_kt_matrices(self):
+        """Plot the KT Matrices on top of each other."""
+
+        # Transparency method copied from stackoverflow
+        # https://stackoverflow.com/questions/10127284/overlay-imshow-plots-in-matplotlib
+        color1 = colors.colorConverter.to_rgba("white")
+        color2 = colors.colorConverter.to_rgba("black")
+
+        cmap1 = colors.LinearSegmentedColormap.from_list(
+            "cmap1", ["green", "blue"], 256
+        )
+        cmap2 = colors.LinearSegmentedColormap.from_list("cmap2", [color1, color2], 256)
+        cmap2._init()
+        alphas = np.linspace(0, 0.6, cmap2.N + 3)
+        cmap2._lut[:, -1] = alphas
+
+        self.ax0.imshow(
+            np.reshape(self.s1_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)),
+            interpolation="none",
+            cmap=cmap1,
+        )
+        self.ax0.imshow(
+            np.reshape(self.s2_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)),
+            interpolation="none",
+            cmap=cmap2,
+        )
+        self.ax0.set_title("Reaction Diffusion Result")
 
     def on_activator_submit(self):
         text = self.activator_textbox.text()
@@ -201,8 +227,7 @@ class KTMethod(QMainWindow):
         self.s1_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
         self.ax0.cla()
-        self.ax0.imshow(np.reshape(self.s1_matrix, (200, 200)), interpolation="none")
-        self.ax0.set_title("Reaction Diffusion Result")
+        self._plot_kt_matrices()
         self.fig.canvas.draw_idle()
 
     def start_or_start_calculation(self):
@@ -232,12 +257,11 @@ class KTMethod(QMainWindow):
         print(f"Simulation took {end - start} seconds")
 
         self.ax0.cla()
-        self.ax0.imshow(np.reshape(self.s1_matrix, (200, 200)), interpolation="none")
-        self.ax0.set_title("Reaction Diffusion Result")
+        self._plot_kt_matrices()
         self.fig.canvas.draw_idle()
 
     def save_figures(self):
-        write_figures(self.s1_matrix, self.s1_environment)
+        print("FIXME: Implement Save Figures!")
 
 
 if __name__ == "__main__":
