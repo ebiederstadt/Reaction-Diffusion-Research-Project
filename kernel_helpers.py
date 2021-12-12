@@ -135,3 +135,17 @@ def compute_stimulation(kernel_cache: np.ndarray, kt_matrix: np.ndarray):
                     indexK = indexK + 1
 
     return stimulation_matrix
+
+
+class ConstantKernel(Kernel):
+    def __init__(self, kernel: np.ndarray):
+        self.kernel = kernel
+        self.integral = self.integrate()
+        self.cache = np.zeros((c.KERNEL_SIZE * 2 + 1) * (c.KERNEL_SIZE * 2 + 1))
+        self.update_cache()
+        self.fourier = self.compute_fourier()
+
+    def update_cache(self):
+        self.cache = np.full(
+            (c.KERNEL_SIZE * 2 + 1) * (c.KERNEL_SIZE * 2 + 1), self.kernel[0]
+        )
