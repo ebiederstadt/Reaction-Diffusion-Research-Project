@@ -87,10 +87,18 @@ class KTMethod(QMainWindow):
             hspace=0.4,
         )
         self.ax0 = self.fig.add_subplot(self.gs[0])
+        self.ax1 = self.fig.add_subplot(self.gs[1])
+        self.ax2 = self.fig.add_subplot(self.gs[2])
+        self._plot_kt_matrix()
+        self._plot_kernel()
+
+    def _plot_kt_matrix(self):
         self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
         self.ax0.set_title("Reaction Diffusion Result")
 
-        self.ax1 = self.fig.add_subplot(self.gs[1])
+    def _plot_kernel(self):
+        """Plot the Kernel and the Fourier Transform of the kernel"""
+
         self.ax1.set_title("Kernel (Activator + Inhibitor)")
         self.ax1.grid(True)
         self.ax1.plot(self.kernel.kernel, label="Kernel")
@@ -104,7 +112,6 @@ class KTMethod(QMainWindow):
         self.ax1.legend()
         self.ax1.set_aspect("equal")
 
-        self.ax2 = self.fig.add_subplot(self.gs[2])
         self.ax2.grid(True)
         self.ax2.plot(self.kernel.fourier)
         self.ax2.set_title("Fourier Transform of Kernel")
@@ -116,33 +123,9 @@ class KTMethod(QMainWindow):
             amplitude, width, distance = [float(x) for x in text.split(",")]
             if self.kernel.activator.diff(amplitude, width, distance):
                 self.kernel.update_activator(amplitude, distance, width)
-                # Update the kernel graph
                 self.ax1.cla()
-                self.ax1.set_title("Kernel (Activator + Inhibitor)")
-                self.ax1.grid(True)
-                self.ax1.plot(self.x, self.kernel.kernel, label="Kernel")
-                self.ax1.plot(
-                    self.x,
-                    self.kernel.activator.kernel,
-                    label="Activator",
-                    linestyle="dashed",
-                )
-                self.ax1.plot(
-                    self.x,
-                    self.kernel.inhibitor.kernel,
-                    label="Inhibitor",
-                    linestyle="dashed",
-                )
-                self.ax1.set_xlim(0, c.KERNEL_SIZE)
-                self.ax1.legend()
-                self.ax1.set_aspect("equal")
-                # Update the fourier transform
                 self.ax2.cla()
-                self.ax2.grid(True)
-                self.ax2.plot(self.kernel.fourier)
-                self.ax2.set_title("Fourier Transform of Kernel")
-                self.ax2.set_xlim(0, c.KERNEL_SIZE)
-
+                self._plot_kernel()
                 self.fig.canvas.draw_idle()
         except ValueError:
             msgbox = QMessageBox(self)
@@ -155,33 +138,9 @@ class KTMethod(QMainWindow):
             amplitude, width, distance = [float(x) for x in text.split(",")]
             if self.kernel.inhibitor.diff(amplitude, distance, width):
                 self.kernel.update_inhibitor(amplitude, distance, width)
-                # Update the kernel graph
                 self.ax1.cla()
-                self.ax1.set_title("Kernel (Activator + Inhibitor)")
-                self.ax1.grid(True)
-                self.ax1.plot(self.x, self.kernel.kernel, label="Kernel")
-                self.ax1.plot(
-                    self.x,
-                    self.kernel.activator.kernel,
-                    label="Activator",
-                    linestyle="dashed",
-                )
-                self.ax1.plot(
-                    self.x,
-                    self.kernel.inhibitor.kernel,
-                    label="Inhibitor",
-                    linestyle="dashed",
-                )
-                self.ax1.set_xlim(0, c.KERNEL_SIZE)
-                self.ax1.legend()
-                self.ax1.set_aspect("equal")
-                # Update the fourier transform
                 self.ax2.cla()
-                self.ax2.grid(True)
-                self.ax2.plot(self.kernel.fourier)
-                self.ax2.set_title("Fourier Transform of Kernel")
-                self.ax2.set_xlim(0, c.KERNEL_SIZE)
-
+                self._plot_kernel()
                 self.fig.canvas.draw_idle()
         except ValueError:
             msgbox = QMessageBox(self)
@@ -192,8 +151,7 @@ class KTMethod(QMainWindow):
         self.kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
         self.ax0.cla()
-        self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
-        self.ax0.set_title("Reaction Diffusion Result")
+        self._plot_kt_matrix()
         self.fig.canvas.draw_idle()
 
     def start_or_start_calculation(self):
@@ -221,8 +179,7 @@ class KTMethod(QMainWindow):
         print(f"Simulation took {end - start} seconds")
 
         self.ax0.cla()
-        self.ax0.imshow(np.reshape(self.kt_matrix, (200, 200)), interpolation="none")
-        self.ax0.set_title("Reaction Diffusion Result")
+        self._plot_kt_matrix()
         self.fig.canvas.draw_idle()
 
     def save_figures(self):
