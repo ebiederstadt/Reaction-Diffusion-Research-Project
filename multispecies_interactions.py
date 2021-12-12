@@ -46,10 +46,15 @@ class KTMethod(QMainWindow):
 
         button_widget = QtWidgets.QWidget()
         button_layout = QtWidgets.QHBoxLayout(button_widget)
-        self.randomize_button = QPushButton(self)
-        self.randomize_button.setText("Randomize Matrix")
-        self.randomize_button.clicked.connect(self.randomize_matrix)
-        button_layout.addWidget(self.randomize_button)
+        self.randomize_s1_button = QPushButton(self)
+        self.randomize_s1_button.setText("Randomize S1")
+        self.randomize_s1_button.clicked.connect(self.randomize_s1)
+        button_layout.addWidget(self.randomize_s1_button)
+
+        self.randomize_s2_button = QPushButton(self)
+        self.randomize_s2_button.setText("Randomize S2")
+        self.randomize_s2_button.clicked.connect(self.randomize_s2)
+        button_layout.addWidget(self.randomize_s2_button)
 
         self.calculation_started = False
         self.calculate_button = QPushButton(self)
@@ -223,8 +228,15 @@ class KTMethod(QMainWindow):
             msgbox.setText(f"Invalid Inhibitor Input: {text}")
             msgbox.exec()
 
-    def randomize_matrix(self):
+    def randomize_s1(self):
         self.s1_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
+
+        self.ax0.cla()
+        self._plot_kt_matrices()
+        self.fig.canvas.draw_idle()
+
+    def randomize_s2(self):
+        self.s2_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
         self.ax0.cla()
         self._plot_kt_matrices()
