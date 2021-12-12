@@ -2,6 +2,7 @@ import sys
 from time import perf_counter
 
 import matplotlib.colors as colors
+import matplotlib.patches as patches
 import matplotlib.gridspec as gridspec
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvas
@@ -143,12 +144,22 @@ class KTMethod(QMainWindow):
             interpolation="none",
             cmap=cmap1,
         )
-        self.ax0.imshow(
+        im = self.ax0.imshow(
             np.reshape(self.s2_matrix, (c.MATRIX_SIZE, c.MATRIX_SIZE)),
             interpolation="none",
             cmap=cmap2,
         )
         self.ax0.set_title("Reaction Diffusion Result")
+
+        # Legend
+        legend_patches = [
+            patches.Patch(color="green", label="Species 1"),
+            patches.Patch(color="blue", label="Species 2"),
+        ]
+        # put those patched as legend-handles into the legend
+        self.ax0.legend(
+            handles=legend_patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0
+        )
 
     def on_activator_submit(self):
         text = self.activator_textbox.text()
