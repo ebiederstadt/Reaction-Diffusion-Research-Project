@@ -7,12 +7,23 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QPushButton
+from PyQt5.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+    QLineEdit,
+)
+from PyQt5.QtCore import Qt
 
 import constants as c
 from interval import SetInterval
 from kernel_helpers import Kernel, compute_stimulation
 from image_processing import write_figures
+from widgets import DoubleSlider
 
 
 class KTMethod(QMainWindow):
@@ -30,19 +41,19 @@ class KTMethod(QMainWindow):
         layout.addWidget(self.canvas)
         self.addToolBar(NavigationToolbar(self.canvas, self))
 
-        self._textwidget = QtWidgets.QWidget()
-        textlayout = QtWidgets.QHBoxLayout(self._textwidget)
+        text_widget = QWidget()
+        textlayout = QHBoxLayout(text_widget)
         self.activator_textbox = QtWidgets.QLineEdit(self)
         self.activator_textbox.editingFinished.connect(self.on_activator_submit)
         textlayout.addWidget(QtWidgets.QLabel("A(x) (Amplitude, Width, Distance): "))
         textlayout.addWidget(self.activator_textbox)
 
-        self.inhibitor_textbox = QtWidgets.QLineEdit(self)
+        self.inhibitor_textbox = QLineEdit(self)
         self.inhibitor_textbox.editingFinished.connect(self.on_inhibitor_submit)
         textlayout.addWidget(QtWidgets.QLabel("I(x) (Amplitude, Width, Distance): "))
         textlayout.addWidget(self.inhibitor_textbox)
 
-        layout.addWidget(self._textwidget)
+        layout.addWidget(text_widget)
 
         button_widget = QtWidgets.QWidget()
         button_layout = QtWidgets.QHBoxLayout(button_widget)
@@ -68,11 +79,84 @@ class KTMethod(QMainWindow):
         self.kernel = Kernel()
         self.kt_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
+        # Sliders for changing up the kernel
+        slider_widget = QWidget()
+        slider_layout = QHBoxLayout(slider_widget)
+
+        amplitude_widget = QWidget()
+        amplitude_layout = QVBoxLayout(amplitude_widget)
+
+        activator_amplitude = QLabel("Activator Amplitude")
+        amplitude_layout.addWidget(activator_amplitude)
+
+        self.activator_amplitude_slider = DoubleSlider(Qt.Horizontal)
+        self.activator_amplitude_slider.setMinimum(-40)
+        self.activator_amplitude_slider.setMaximum(40)
+        self.activator_amplitude_slider.setValue(self.kernel.activator.amplitude)
+        amplitude_layout.addWidget(self.activator_amplitude_slider)
+
+        inhibitor_amplitude = QLabel("Inhibitor Amplitude")
+        amplitude_layout.addWidget(inhibitor_amplitude)
+
+        self.inhibitor_amplitude_slider = DoubleSlider(Qt.Horizontal)
+        self.inhibitor_amplitude_slider.setMinimum(-40)
+        self.inhibitor_amplitude_slider.setMaximum(40)
+        self.inhibitor_amplitude_slider.setValue(self.kernel.inhibitor.amplitude)
+        amplitude_layout.addWidget(self.inhibitor_amplitude_slider)
+
+        slider_layout.addWidget(amplitude_widget)
+
+        width_widget = QWidget()
+        width_layout = QVBoxLayout(width_widget)
+
+        activator_width = QLabel("Activator Width")
+        width_layout.addWidget(activator_width)
+
+        self.activator_width_slider = DoubleSlider(Qt.Horizontal)
+        self.activator_width_slider.setMinimum(0)
+        self.activator_width_slider.setMaximum(10)
+        self.activator_width_slider.setValue(self.kernel.activator.width)
+        width_layout.addWidget(self.activator_width_slider)
+
+        inhibitor_width = QLabel("Inhibitor Width")
+        width_layout.addWidget(inhibitor_width)
+
+        self.inhibitor_width_slider = DoubleSlider(Qt.Horizontal)
+        self.inhibitor_width_slider.setMinimum(0)
+        self.inhibitor_width_slider.setMaximum(10)
+        self.inhibitor_width_slider.setValue(self.kernel.inhibitor.width)
+        width_layout.addWidget(self.inhibitor_width_slider)
+
+        slider_layout.addWidget(width_widget)
+
+        distance_widget = QWidget()
+        distance_layout = QVBoxLayout(distance_widget)
+
+        activator_distance = QLabel("Activator Distance")
+        distance_layout.addWidget(activator_distance)
+
+        self.activator_distance_slider = DoubleSlider(Qt.Horizontal)
+        self.activator_distance_slider.setMinimum(0)
+        self.activator_distance_slider.setMaximum(20)
+        self.activator_distance_slider.setValue(self.kernel.activator.distance)
+        distance_layout.addWidget(self.activator_distance_slider)
+
+        inhibitor_distance = QLabel("Inhibitor Distance")
+        distance_layout.addWidget(inhibitor_distance)
+
+        self.inhibitor_distance_slider = DoubleSlider(Qt.Horizontal)
+        self.inhibitor_distance_slider.setMinimum(0)
+        self.inhibitor_distance_slider.setMaximum(20)
+        self.inhibitor_distance_slider.setValue(self.kernel.inhibitor.distance)
+        distance_layout.addWidget(self.inhibitor_distance_slider)
+
+        slider_layout.addWidget(distance_widget)
+
+        layout.addWidget(slider_widget)
+
         self.fill_figure()
 
     def fill_figure(self):
-        self.string = "label"
-
         self.rows = 2  # reducing rows speeds up textbox interaction
         self.cols = 2  # reducing cols speeds up textbox interaction
         self.plot_count = self.rows * self.cols
