@@ -107,21 +107,8 @@ class KTMethod(QMainWindow):
         self._plot_kt_matrices()
 
         self.ax1 = self.fig.add_subplot(self.gs[1])
-        self.ax1.set_title("Kernel Functions")
-        self.ax1.grid(True)
-        self.ax1.plot(self.s1_environment.kernel, label="s1 and the environment")
-        self.ax1.plot(self.s2_environment.kernel, label="s2 and the environment")
-        self.ax1.plot(self.s2_s1.kernel, label="The effect of s2 on s1")
-        self.ax1.plot(self.s1_s2.kernel, label="The effect of s1 on s2")
-        self.ax1.set_xlim(0, c.KERNEL_SIZE)
-        self.ax1.legend()
-        self.ax1.set_aspect("equal")
-
         self.ax2 = self.fig.add_subplot(self.gs[2])
-        self.ax2.grid(True)
-        self.ax2.plot(self.s1_environment.fourier)
-        self.ax2.set_title("Fourier Transform of Kernel")
-        self.ax2.set_xlim(0, c.KERNEL_SIZE)
+        self._plot_kernel()
 
     def _plot_kt_matrices(self):
         """Plot the KT Matrices on top of each other."""
@@ -161,6 +148,26 @@ class KTMethod(QMainWindow):
             handles=legend_patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0
         )
 
+    def _plot_kernel(self):
+        """Plot the kernel and the fourier transform of the kernel"""
+
+        self.ax1.set_title("Kernel (Activator + Inhibitor)")
+        self.ax1.plot(self.s1_environment.kernel, label="s1 and the environment")
+        self.ax1.plot(self.s2_environment.kernel, label="s2 and the environment")
+        self.ax1.plot(self.s2_s1.kernel, label="Effect of s2 on s1")
+        self.ax1.plot(self.s1_s2.kernel, label="Effect of s1 on s2")
+        self.ax1.grid(True)
+        self.ax1.set_xlim(0, c.KERNEL_SIZE)
+        self.ax1.legend()
+        self.ax1.set_aspect("equal")
+
+        self.ax2.grid(True)
+        self.ax2.plot(self.s1_s2.fourier, label="Effect of s2 on s1")
+        self.ax2.plot(self.s2_s1.fourier, label="Effect of s1 on s2")
+        self.ax2.set_title("Fourier Transform of Kernels")
+        self.ax2.set_xlim(0, c.KERNEL_SIZE)
+        self.ax2.legend()
+
     def on_activator_submit(self):
         text = self.activator_textbox.text()
         try:
@@ -169,31 +176,8 @@ class KTMethod(QMainWindow):
                 self.s1_environment.update_activator(amplitude, distance, width)
                 # Update the kernel graph
                 self.ax1.cla()
-                self.ax1.set_title("Kernel (Activator + Inhibitor)")
-                self.ax1.grid(True)
-                self.ax1.plot(self.x, self.s1_environment.kernel, label="Kernel")
-                self.ax1.plot(
-                    self.x,
-                    self.s1_environment.activator.kernel,
-                    label="Activator",
-                    linestyle="dashed",
-                )
-                self.ax1.plot(
-                    self.x,
-                    self.s1_environment.inhibitor.kernel,
-                    label="Inhibitor",
-                    linestyle="dashed",
-                )
-                self.ax1.set_xlim(0, c.KERNEL_SIZE)
-                self.ax1.legend()
-                self.ax1.set_aspect("equal")
-                # Update the fourier transform
                 self.ax2.cla()
-                self.ax2.grid(True)
-                self.ax2.plot(self.s1_environment.fourier)
-                self.ax2.set_title("Fourier Transform of Kernel")
-                self.ax2.set_xlim(0, c.KERNEL_SIZE)
-
+                self._plot_kernel()
                 self.fig.canvas.draw_idle()
         except ValueError:
             msgbox = QMessageBox(self)
@@ -208,31 +192,8 @@ class KTMethod(QMainWindow):
                 self.s1_environment.update_inhibitor(amplitude, distance, width)
                 # Update the kernel graph
                 self.ax1.cla()
-                self.ax1.set_title("Kernel (Activator + Inhibitor)")
-                self.ax1.grid(True)
-                self.ax1.plot(self.x, self.s1_environment.kernel, label="Kernel")
-                self.ax1.plot(
-                    self.x,
-                    self.s1_environment.activator.kernel,
-                    label="Activator",
-                    linestyle="dashed",
-                )
-                self.ax1.plot(
-                    self.x,
-                    self.s1_environment.inhibitor.kernel,
-                    label="Inhibitor",
-                    linestyle="dashed",
-                )
-                self.ax1.set_xlim(0, c.KERNEL_SIZE)
-                self.ax1.legend()
-                self.ax1.set_aspect("equal")
-                # Update the fourier transform
                 self.ax2.cla()
-                self.ax2.grid(True)
-                self.ax2.plot(self.s1_environment.fourier)
-                self.ax2.set_title("Fourier Transform of Kernel")
-                self.ax2.set_xlim(0, c.KERNEL_SIZE)
-
+                self._plot_kernel()
                 self.fig.canvas.draw_idle()
         except ValueError:
             msgbox = QMessageBox(self)
