@@ -36,11 +36,6 @@ class KernelChoices(Enum):
     THICK_STRIPED = 4
 
 
-class SpeciesOptions(Enum):
-    SPECIES_1 = 0
-    SPECIES_2 = 1
-
-
 def from_string(s: str) -> KernelChoices:
     if s == "LALI Kernel":
         return KernelChoices.LALI
@@ -135,7 +130,7 @@ class MultiSpeciesWindow(QMainWindow):
         self.s1_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
         self.s2_matrix = 1 - self.s1_matrix
 
-        self.species_to_plot = SpeciesOptions.SPECIES_1
+        self.species_to_plot = 1
 
         self.fill_figure()
 
@@ -251,16 +246,12 @@ class MultiSpeciesWindow(QMainWindow):
         view_s1.setCheckable(True)
         view_s1.setText("View Species 1")
         view_s1.setChecked(True)
-        view_s1.triggered.connect(
-            lambda _: self._update_species_display(SpeciesOptions.SPECIES_1)
-        )
+        view_s1.triggered.connect(lambda _: self._update_species_display(1))
 
         view_s2 = QAction(self)
         view_s2.setCheckable(True)
         view_s2.setText("View Species 2")
-        view_s2.triggered.connect(
-            lambda _: self._update_species_display(SpeciesOptions.SPECIES_2)
-        )
+        view_s2.triggered.connect(lambda _: self._update_species_display(2))
 
         view_group = QActionGroup(self)
         view_group.addAction(view_s1)
@@ -271,11 +262,10 @@ class MultiSpeciesWindow(QMainWindow):
         view_menu.addAction(view_s1)
         view_menu.addAction(view_s2)
 
-    def _update_species_display(self, option: SpeciesOptions):
+    def _update_species_display(self, option: int):
         self.species_to_plot = option
-        self.ax1.cla()
-        self.ax2.cla()
-        self._plot_kernel()
+        self.ax3.cla()
+        self._plot_species()
         self.fig.canvas.draw_idle()
 
     def _plot_kt_matrices(self, axis: Optional[Axes] = None) -> None:
@@ -352,15 +342,21 @@ class MultiSpeciesWindow(QMainWindow):
 
         self._plot_species()
 
-    def _plot_species(self):
-        if self.species_to_plot == SpeciesOptions.SPECIES_1:
-            self.ax3.imshow(
+    def _plot_species(self, axis: Optional[Axes] = None, id: Optional[int] = None):
+        if not axis:
+            axis = self.ax3
+        if not id:
+            id = self.species_to_plot
+
+        axis.set_title(f"Species {id}")
+        if id == 1:
+            axis.imshow(
                 np.reshape(self.s1_matrix, (200, 200)),
                 interpolation=None,
                 cmap="Greens",
             )
         else:
-            self.ax3.imshow(
+            axis.imshow(
                 np.reshape(self.s2_matrix, (200, 200)), interpolation=None, cmap="Blues"
             )
 
@@ -452,6 +448,15 @@ class MultiSpeciesWindow(QMainWindow):
         plt.close(kernel_fig)
         fourier_fig.savefig(os.path.join(path, "fourier.png"))
         plt.close(fourier_fig)
+
+        species1_fig, species1_ax = plt.subplots()
+        self._plot_species(species1_ax, 1)
+        species1_fig.savefig(os.path.join(path, "species_1.png"))
+        plt.close(species1_fig)
+        species2_fig, species2_ax = plt.subplots()
+        self._plot_species(species2_ax, 2)
+        species2_fig.savefig(os.path.join(path, f"species_2.png"))
+        plt.close(species2_fig)
 
 
 if __name__ == "__main__":
