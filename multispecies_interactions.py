@@ -1,3 +1,4 @@
+from enum import Enum
 import os
 import sys
 from time import perf_counter
@@ -18,7 +19,6 @@ from PyQt5.QtWidgets import (
     QAction,
     QActionGroup,
     QMainWindow,
-    QMessageBox,
     QPushButton,
 )
 
@@ -26,6 +26,49 @@ import constants as c
 from db import write_kernel_multispecies
 from interval import SetInterval
 from kernel_helpers import Kernel, ConstantKernel, compute_stimulation
+
+
+class KernelChoices(Enum):
+    LALI = 0
+    INVERTED_LALI = 1
+    NESTED = 2
+    THIN_STRIPED = 3
+    THICK_STRIPED = 4
+
+
+def from_string(s: str) -> KernelChoices:
+    if s == "LALI Kernel":
+        return KernelChoices.LALI
+    elif s == "Inverted LALI Kernel":
+        return KernelChoices.INVERTED_LALI
+    elif s == "Nested Pattern Formation":
+        return KernelChoices.NESTED
+    elif s == "Thin Striped Kernel":
+        return KernelChoices.THIN_STRIPED
+    elif s == "Thick Striped Kernel":
+        return KernelChoices.THICK_STRIPED
+    else:
+        raise ValueError("Invalid string")
+
+
+def determine_kernel_params(choice: KernelChoices, kernel: Kernel):
+    if choice == KernelChoices.LALI:
+        kernel.update_activator(20.267, 0.0, 1.817)
+        kernel.update_inhibitor(-2.133, 0.0, 5.835)
+    elif choice == KernelChoices.INVERTED_LALI:
+        kernel.update_activator(-22.4, 0.0, 2.748)
+        kernel.update_inhibitor(8.0, 6.7, 1.278)
+    elif choice == KernelChoices.NESTED:
+        kernel.update_activator(21.085, 10.3, 0.739)
+        kernel.update_inhibitor(-19.733, 8.7, 0.935)
+    elif choice == KernelChoices.THIN_STRIPED:
+        kernel.update_activator(13.251, 8.9, 0.886)
+        kernel.update_inhibitor(-7.466, 0.0, 5.835)
+    elif choice == KernelChoices.THICK_STRIPED:
+        kernel.update_activator(13.908, 5.78, 2.013)
+        kernel.update_inhibitor(-11.733, 11.5, 1.18)
+    else:
+        raise ValueError("Invalid kernel choice")
 
 
 class KTMethod(QMainWindow):
@@ -171,7 +214,9 @@ class KTMethod(QMainWindow):
         s2_s1_menu.addAction(s2_s1_nested_action)
         s2_s1_menu.addAction(s2_s1_thin_stripes)
         s2_s1_menu.addAction(s2_s1_thick_stripes)
-        s2_s1_menu.triggered.connect(lambda action: print(action.text()))
+        s2_s1_menu.triggered.connect(
+            lambda action: self.update_s2_s1(from_string(action.text()))
+        )
 
         s1_s2_menu = edit_menu.addMenu("Change how s1 will affect s2")
         s1_s2_action_group = QActionGroup(self)
@@ -188,7 +233,9 @@ class KTMethod(QMainWindow):
         s1_s2_menu.addAction(s1_s2_nested_action)
         s1_s2_menu.addAction(s1_s2_thin_stripes)
         s1_s2_menu.addAction(s1_s2_thick_stripes)
-        s1_s2_menu.triggered.connect(lambda action: print(action.text()))
+        s1_s2_menu.triggered.connect(
+            lambda action: self.update_s1_s2(from_string(action.text()))
+        )
 
     def _plot_kt_matrices(self, axis: Optional[Axes] = None) -> None:
         """Plot the KT Matrices on top of each other."""
@@ -241,11 +288,12 @@ class KTMethod(QMainWindow):
         if not fourier_axis:
             fourier_axis = self.ax2
 
+        x = np.linspace(0, c.KERNEL_SIZE)
         kernel_axis.set_title("Kernel (Activator + Inhibitor)")
-        kernel_axis.plot(self.s1_environment.kernel, label="s1 and the environment")
-        kernel_axis.plot(self.s2_environment.kernel, label="s2 and the environment")
-        kernel_axis.plot(self.s2_s1.kernel, label="Effect of s2 on s1")
-        kernel_axis.plot(self.s1_s2.kernel, label="Effect of s1 on s2")
+        kernel_axis.plot(x, self.s1_environment.kernel, label="s1 and the environment")
+        kernel_axis.plot(x, self.s2_environment.kernel, label="s2 and the environment")
+        kernel_axis.plot(x, self.s2_s1.kernel, label="Effect of s2 on s1")
+        kernel_axis.plot(x, self.s1_s2.kernel, label="Effect of s1 on s2")
         kernel_axis.grid(True)
         kernel_axis.set_xlim(0, c.KERNEL_SIZE)
         kernel_axis.legend()
@@ -258,27 +306,23 @@ class KTMethod(QMainWindow):
         fourier_axis.set_xlim(0, c.KERNEL_SIZE)
         fourier_axis.legend()
 
-    def on_activator_submit(self):
-        text = self.activator_textbox.text()
-        amplitude, width, distance = [float(x) for x in text.split(",")]
-        if self.s1_environment.activator.diff(amplitude, width, distance):
-            self.s1_environment.update_activator(amplitude, distance, width)
-            # Update the kernel graph
-            self.ax1.cla()
-            self.ax2.cla()
-            self._plot_kernel()
-            self.fig.canvas.draw_idle()
+    def update_s2_s1(self, choice: KernelChoices):
+        """This will change how s1 is affected by s2"""
 
-    def on_inhibitor_submit(self):
-        text = self.inhibitor_textbox.text()
-        amplitude, width, distance = [float(x) for x in text.split(",")]
-        if self.s1_environment.inhibitor.diff(amplitude, distance, width):
-            self.s1_environment.update_inhibitor(amplitude, distance, width)
-            # Update the kernel graph
-            self.ax1.cla()
-            self.ax2.cla()
-            self._plot_kernel()
-            self.fig.canvas.draw_idle()
+        determine_kernel_params(choice, self.s2_s1)
+        self.ax1.cla()
+        self.ax2.cla()
+        self._plot_kernel()
+        self.fig.canvas.draw_idle()
+
+    def update_s1_s2(self, choice: KernelChoices):
+        """This will change how s2 is affected by s2"""
+
+        determine_kernel_params(choice, self.s1_s2)
+        self.ax1.cla()
+        self.ax2.cla()
+        self._plot_kernel()
+        self.fig.canvas.draw_idle()
 
     def randomize_s1(self):
         self.s1_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)

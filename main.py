@@ -262,14 +262,15 @@ class KTMethod(QMainWindow):
     def _plot_kernel(self):
         """Plot the Kernel and the Fourier Transform of the kernel"""
 
+        x = np.linspace(0, c.KERNEL_SIZE)
         self.ax1.set_title("Kernel (Activator + Inhibitor)")
         self.ax1.grid(True)
-        self.ax1.plot(self.kernel.kernel, label="Kernel")
+        self.ax1.plot(x, self.kernel.kernel, label="Kernel")
         self.ax1.plot(
-            self.kernel.activator.kernel, label="Activator", linestyle="dashed"
+            x, self.kernel.activator.kernel, label="Activator", linestyle="dashed"
         )
         self.ax1.plot(
-            self.kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed"
+            x, self.kernel.inhibitor.kernel, label="Inhibitor", linestyle="dashed"
         )
         self.ax1.set_xlim(0, c.KERNEL_SIZE)
         self.ax1.legend()
@@ -283,6 +284,7 @@ class KTMethod(QMainWindow):
         text = self.activator_textbox.text()
         try:
             amplitude, width, distance = [float(x) for x in text.split(",")]
+            print(f"Update activator with params: {amplitude, distance, width}")
             if self.kernel.activator.diff(amplitude, width, distance):
                 self.kernel.update_activator(amplitude, distance, width)
                 self.ax1.cla()
