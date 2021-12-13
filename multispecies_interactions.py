@@ -36,6 +36,11 @@ class KernelChoices(Enum):
     THICK_STRIPED = 4
 
 
+class SpeciesOptions(Enum):
+    SPECIES_1 = 0
+    SPECIES_2 = 1
+
+
 def from_string(s: str) -> KernelChoices:
     if s == "LALI Kernel":
         return KernelChoices.LALI
@@ -71,10 +76,10 @@ def determine_kernel_params(choice: KernelChoices, kernel: Kernel):
         raise ValueError("Invalid kernel choice")
 
 
-class KTMethod(QMainWindow):
+class MultiSpeciesWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("KT Method Simulator")
+        self.setWindowTitle("Multispecies Interactions")
         self._main = QtWidgets.QWidget()
         self.setCentralWidget(self._main)
         layout = QtWidgets.QVBoxLayout(self._main)
@@ -122,11 +127,15 @@ class KTMethod(QMainWindow):
         self.s2_environment = ConstantKernel(np.ones(c.KERNEL_ELEMS))
 
         self.s1_s2 = Kernel()  # The effect of s1 on s2
+        determine_kernel_params(KernelChoices.LALI, self.s1_s2)
         self.s2_s1 = Kernel()  # The effect of s2 on s1
+        determine_kernel_params(KernelChoices.LALI, self.s2_s1)
 
         # Initially, the two species are exactly opposite to each other
         self.s1_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
         self.s2_matrix = 1 - self.s1_matrix
+
+        self.species_to_plot = SpeciesOptions.SPECIES_1
 
         self.fill_figure()
 
@@ -151,6 +160,7 @@ class KTMethod(QMainWindow):
 
         self.ax1 = self.fig.add_subplot(self.gs[1])
         self.ax2 = self.fig.add_subplot(self.gs[2])
+        self.ax3 = self.fig.add_subplot(self.gs[3])
         self._plot_kernel()
 
     def _create_menu(self):
@@ -237,6 +247,37 @@ class KTMethod(QMainWindow):
             lambda action: self.update_s1_s2(from_string(action.text()))
         )
 
+        view_s1 = QAction(self)
+        view_s1.setCheckable(True)
+        view_s1.setText("View Species 1")
+        view_s1.setChecked(True)
+        view_s1.triggered.connect(
+            lambda _: self._update_species_display(SpeciesOptions.SPECIES_1)
+        )
+
+        view_s2 = QAction(self)
+        view_s2.setCheckable(True)
+        view_s2.setText("View Species 2")
+        view_s2.triggered.connect(
+            lambda _: self._update_species_display(SpeciesOptions.SPECIES_2)
+        )
+
+        view_group = QActionGroup(self)
+        view_group.addAction(view_s1)
+        view_group.addAction(view_s2)
+        view_group.setExclusive(True)
+
+        view_menu = menu.addMenu("View")
+        view_menu.addAction(view_s1)
+        view_menu.addAction(view_s2)
+
+    def _update_species_display(self, option: SpeciesOptions):
+        self.species_to_plot = option
+        self.ax1.cla()
+        self.ax2.cla()
+        self._plot_kernel()
+        self.fig.canvas.draw_idle()
+
     def _plot_kt_matrices(self, axis: Optional[Axes] = None) -> None:
         """Plot the KT Matrices on top of each other."""
 
@@ -288,23 +329,40 @@ class KTMethod(QMainWindow):
         if not fourier_axis:
             fourier_axis = self.ax2
 
-        x = np.linspace(0, c.KERNEL_SIZE)
         kernel_axis.set_title("Kernel (Activator + Inhibitor)")
-        kernel_axis.plot(x, self.s1_environment.kernel, label="s1 and the environment")
-        kernel_axis.plot(x, self.s2_environment.kernel, label="s2 and the environment")
-        kernel_axis.plot(x, self.s2_s1.kernel, label="Effect of s2 on s1")
-        kernel_axis.plot(x, self.s1_s2.kernel, label="Effect of s1 on s2")
+        kernel_axis.plot(
+            self.x, self.s1_environment.kernel, label="s1 and the environment"
+        )
+        kernel_axis.plot(
+            self.x, self.s2_environment.kernel, label="s2 and the environment"
+        )
+        kernel_axis.plot(self.x, self.s2_s1.kernel, label="Effect of s2 on s1")
+        kernel_axis.plot(self.x, self.s1_s2.kernel, label="Effect of s1 on s2")
         kernel_axis.grid(True)
         kernel_axis.set_xlim(0, c.KERNEL_SIZE)
         kernel_axis.legend()
         kernel_axis.set_aspect("equal")
 
         fourier_axis.grid(True)
-        fourier_axis.plot(self.s1_s2.fourier, label="Effect of s2 on s1")
-        fourier_axis.plot(self.s2_s1.fourier, label="Effect of s1 on s2")
+        fourier_axis.plot(self.x, self.s1_s2.fourier, label="Effect of s2 on s1")
+        fourier_axis.plot(self.x, self.s2_s1.fourier, label="Effect of s1 on s2")
         fourier_axis.set_title("Fourier Transform of Kernels")
         fourier_axis.set_xlim(0, c.KERNEL_SIZE)
         fourier_axis.legend()
+
+        self._plot_species()
+
+    def _plot_species(self):
+        if self.species_to_plot == SpeciesOptions.SPECIES_1:
+            self.ax3.imshow(
+                np.reshape(self.s1_matrix, (200, 200)),
+                interpolation=None,
+                cmap="Greens",
+            )
+        else:
+            self.ax3.imshow(
+                np.reshape(self.s2_matrix, (200, 200)), interpolation=None, cmap="Blues"
+            )
 
     def update_s2_s1(self, choice: KernelChoices):
         """This will change how s1 is affected by s2"""
@@ -328,14 +386,18 @@ class KTMethod(QMainWindow):
         self.s1_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
         self.ax0.cla()
+        self.ax3.cla()
         self._plot_kt_matrices()
+        self._plot_species()
         self.fig.canvas.draw_idle()
 
     def randomize_s2(self):
         self.s2_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
 
         self.ax0.cla()
+        self.ax0.cla()
         self._plot_kt_matrices()
+        self._plot_species()
         self.fig.canvas.draw_idle()
 
     def start_or_start_calculation(self):
@@ -348,24 +410,29 @@ class KTMethod(QMainWindow):
 
     def calculate_stimulation_received(self):
         start = perf_counter()
-        stimulation_matrix = compute_stimulation(
-            self.s1_environment.cache, self.s1_matrix
-        )
+        s1_stimulation_matrix = compute_stimulation(self.s2_s1.cache, self.s2_matrix)
         np.clip(
-            stimulation_matrix,
+            s1_stimulation_matrix,
             c.MIN_STIMULATION,
             c.MAX_STIMULATION,
-            out=stimulation_matrix,
+            out=s1_stimulation_matrix,
         )
-        print(
-            f"stimulation max: {stimulation_matrix.max()} min: {stimulation_matrix.min()}, mean: {stimulation_matrix.mean()}"
+        s2_stimulation_matrix = compute_stimulation(self.s1_s2.cache, self.s1_matrix)
+        np.clip(
+            s2_stimulation_matrix,
+            c.MIN_STIMULATION,
+            c.MAX_STIMULATION,
+            out=s2_stimulation_matrix,
         )
-        self.s1_matrix = self.s1_matrix * c.DECAY_RATE + stimulation_matrix / 100
+        self.s1_matrix = self.s1_matrix * c.DECAY_RATE + s1_stimulation_matrix / 100
+        self.s2_matrix = self.s2_matrix * c.DECAY_RATE + s2_stimulation_matrix / 100
         end = perf_counter()
         print(f"Simulation took {end - start} seconds")
 
         self.ax0.cla()
+        self.ax3.cla()
         self._plot_kt_matrices()
+        self._plot_species()
         self.fig.canvas.draw_idle()
 
     def save_figures(self):
@@ -389,6 +456,6 @@ class KTMethod(QMainWindow):
 
 if __name__ == "__main__":
     qapp = QtWidgets.QApplication(sys.argv)
-    app = KTMethod()
+    app = MultiSpeciesWindow()
     app.show()
     qapp.exec_()
