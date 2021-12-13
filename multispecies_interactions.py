@@ -14,7 +14,13 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.axes._axes import Axes
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QPushButton
+from PyQt5.QtWidgets import (
+    QAction,
+    QActionGroup,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+)
 
 import constants as c
 from db import write_kernel_multispecies
@@ -36,20 +42,6 @@ class KTMethod(QMainWindow):
         self.canvas = FigureCanvas(self.fig)
         layout.addWidget(self.canvas)
         self.addToolBar(NavigationToolbar(self.canvas, self))
-
-        self._textwidget = QtWidgets.QWidget()
-        textlayout = QtWidgets.QHBoxLayout(self._textwidget)
-        self.activator_textbox = QtWidgets.QLineEdit(self)
-        self.activator_textbox.editingFinished.connect(self.on_activator_submit)
-        textlayout.addWidget(QtWidgets.QLabel("A(x) (Amplitude, Width, Distance): "))
-        textlayout.addWidget(self.activator_textbox)
-
-        self.inhibitor_textbox = QtWidgets.QLineEdit(self)
-        self.inhibitor_textbox.editingFinished.connect(self.on_inhibitor_submit)
-        textlayout.addWidget(QtWidgets.QLabel("I(x) (Amplitude, Width, Distance): "))
-        textlayout.addWidget(self.inhibitor_textbox)
-
-        layout.addWidget(self._textwidget)
 
         button_widget = QtWidgets.QWidget()
         button_layout = QtWidgets.QHBoxLayout(button_widget)
@@ -75,6 +67,8 @@ class KTMethod(QMainWindow):
         button_layout.addWidget(self.save_button)
 
         layout.addWidget(button_widget)
+
+        self._create_menu()
 
         self.x = np.linspace(0, c.KERNEL_SIZE)
 
@@ -115,6 +109,86 @@ class KTMethod(QMainWindow):
         self.ax1 = self.fig.add_subplot(self.gs[1])
         self.ax2 = self.fig.add_subplot(self.gs[2])
         self._plot_kernel()
+
+    def _create_menu(self):
+        # First set of actions modify species 1
+        s2_s1_lali_action = QAction(self)
+        s2_s1_lali_action.setText("LALI Kernel")
+        s2_s1_lali_action.setCheckable(True)
+        s2_s1_lali_action.setChecked(True)
+
+        s2_s1_inverted_lali_action = QAction(self)
+        s2_s1_inverted_lali_action.setText("Inverted LALI Kernel")
+        s2_s1_inverted_lali_action.setCheckable(True)
+
+        s2_s1_nested_action = QAction(self)
+        s2_s1_nested_action.setText("Nested Pattern Formation")
+        s2_s1_nested_action.setCheckable(True)
+
+        s2_s1_thin_stripes = QAction(self)
+        s2_s1_thin_stripes.setText("Thin Striped Kernel")
+        s2_s1_thin_stripes.setCheckable(True)
+
+        s2_s1_thick_stripes = QAction(self)
+        s2_s1_thick_stripes.setText("Thick Striped Kernel")
+        s2_s1_thick_stripes.setCheckable(True)
+
+        # Second set of actions modify s2
+        s1_s2_lali_action = QAction(self)
+        s1_s2_lali_action.setText("LALI Kernel")
+        s1_s2_lali_action.setCheckable(True)
+        s1_s2_lali_action.setChecked(True)
+
+        s1_s2_inverted_lali_action = QAction(self)
+        s1_s2_inverted_lali_action.setText("Inverted LALI Kernel")
+        s1_s2_inverted_lali_action.setCheckable(True)
+
+        s1_s2_nested_action = QAction(self)
+        s1_s2_nested_action.setText("Nested Pattern Formation")
+        s1_s2_nested_action.setCheckable(True)
+
+        s1_s2_thin_stripes = QAction(self)
+        s1_s2_thin_stripes.setText("Thin Striped Kernel")
+        s1_s2_thin_stripes.setCheckable(True)
+
+        s1_s2_thick_stripes = QAction(self)
+        s1_s2_thick_stripes.setText("Thick Striped Kernel")
+        s1_s2_thick_stripes.setCheckable(True)
+
+        menu = self.menuBar()
+        edit_menu = menu.addMenu("&Edit")
+        s2_s1_action_group = QActionGroup(self)
+        s2_s1_action_group.setExclusive(True)
+        s2_s1_action_group.addAction(s2_s1_lali_action)
+        s2_s1_action_group.addAction(s2_s1_inverted_lali_action)
+        s2_s1_action_group.addAction(s2_s1_nested_action)
+        s2_s1_action_group.addAction(s2_s1_thin_stripes)
+        s2_s1_action_group.addAction(s2_s1_thick_stripes)
+
+        s2_s1_menu = edit_menu.addMenu("Change how s2 will affect s1")
+        s2_s1_menu.addAction(s2_s1_lali_action)
+        s2_s1_menu.addAction(s2_s1_inverted_lali_action)
+        s2_s1_menu.addAction(s2_s1_nested_action)
+        s2_s1_menu.addAction(s2_s1_thin_stripes)
+        s2_s1_menu.addAction(s2_s1_thick_stripes)
+        s2_s1_menu.triggered.connect(lambda action: print(action.text()))
+
+        s1_s2_menu = edit_menu.addMenu("Change how s1 will affect s2")
+        s1_s2_action_group = QActionGroup(self)
+        s1_s2_action_group.setExclusive(True)
+        s1_s2_action_group.addAction(s1_s2_lali_action)
+        s1_s2_action_group.addAction(s1_s2_inverted_lali_action)
+        s1_s2_action_group.addAction(s1_s2_nested_action)
+        s1_s2_action_group.addAction(s1_s2_thin_stripes)
+        s1_s2_action_group.addAction(s1_s2_thick_stripes)
+        s1_s2_action_group.setExclusive(True)
+
+        s1_s2_menu.addAction(s1_s2_lali_action)
+        s1_s2_menu.addAction(s1_s2_inverted_lali_action)
+        s1_s2_menu.addAction(s1_s2_nested_action)
+        s1_s2_menu.addAction(s1_s2_thin_stripes)
+        s1_s2_menu.addAction(s1_s2_thick_stripes)
+        s1_s2_menu.triggered.connect(lambda action: print(action.text()))
 
     def _plot_kt_matrices(self, axis: Optional[Axes] = None) -> None:
         """Plot the KT Matrices on top of each other."""
@@ -186,35 +260,25 @@ class KTMethod(QMainWindow):
 
     def on_activator_submit(self):
         text = self.activator_textbox.text()
-        try:
-            amplitude, width, distance = [float(x) for x in text.split(",")]
-            if self.s1_environment.activator.diff(amplitude, width, distance):
-                self.s1_environment.update_activator(amplitude, distance, width)
-                # Update the kernel graph
-                self.ax1.cla()
-                self.ax2.cla()
-                self._plot_kernel()
-                self.fig.canvas.draw_idle()
-        except ValueError:
-            msgbox = QMessageBox(self)
-            msgbox.setText(f"Invalid Activator Input: {text}")
-            msgbox.exec()
+        amplitude, width, distance = [float(x) for x in text.split(",")]
+        if self.s1_environment.activator.diff(amplitude, width, distance):
+            self.s1_environment.update_activator(amplitude, distance, width)
+            # Update the kernel graph
+            self.ax1.cla()
+            self.ax2.cla()
+            self._plot_kernel()
+            self.fig.canvas.draw_idle()
 
     def on_inhibitor_submit(self):
         text = self.inhibitor_textbox.text()
-        try:
-            amplitude, width, distance = [float(x) for x in text.split(",")]
-            if self.s1_environment.inhibitor.diff(amplitude, distance, width):
-                self.s1_environment.update_inhibitor(amplitude, distance, width)
-                # Update the kernel graph
-                self.ax1.cla()
-                self.ax2.cla()
-                self._plot_kernel()
-                self.fig.canvas.draw_idle()
-        except ValueError:
-            msgbox = QMessageBox(self)
-            msgbox.setText(f"Invalid Inhibitor Input: {text}")
-            msgbox.exec()
+        amplitude, width, distance = [float(x) for x in text.split(",")]
+        if self.s1_environment.inhibitor.diff(amplitude, distance, width):
+            self.s1_environment.update_inhibitor(amplitude, distance, width)
+            # Update the kernel graph
+            self.ax1.cla()
+            self.ax2.cla()
+            self._plot_kernel()
+            self.fig.canvas.draw_idle()
 
     def randomize_s1(self):
         self.s1_matrix = np.random.rand(c.MATRIX_SIZE * c.MATRIX_SIZE)
