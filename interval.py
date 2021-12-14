@@ -7,7 +7,7 @@ class SetInterval:
         self.interval = interval
         self.action = action
         self.stop_event = threading.Event()
-        thread = threading.Thread(target=self._set_interval)
+        thread = threading.Thread(target=self._set_interval, daemon=True)
         thread.start()
 
     def _set_interval(self):
