@@ -353,7 +353,7 @@ class KTMethod(QMainWindow):
             if do_full_update:
                 self.kernel.update_inhibitor(amplitude, distance, width)
             else:
-                self.kernel.partial_update_activator(amplitude, distance, width)
+                self.kernel.parital_update_inhibitor(amplitude, distance, width)
             self.ax1.cla()
             self.ax2.cla()
             self._plot_kernel()
