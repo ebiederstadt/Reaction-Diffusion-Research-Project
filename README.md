@@ -6,7 +6,7 @@ For more information on kernel based reaction diffusion, you can read the paper 
 
 ## Requirements 
 
-- Python (3.7-3.10)
+- Python (3.7-3.9), tested with python 3.9 only
 - Poetry: https://python-poetry.org/docs/
 
 After cloning the repository, run `poetry init`.
