@@ -1,5 +1,7 @@
 # Reaction Diffusion Research Project
 
+![Code Quality](https://github.com/ebiederstadt/Reaction-Diffusion-Research-Project/actions/workflows/main.yml/badge.svg)
+
 The project is built to simulate plant patterning using kernel based reaction diffusion techniques.
 
 For more information on kernel based reaction diffusion, you can read the paper by Kondo: https://www.sciencedirect.com/science/article/pii/S0022519316303630. You can also read my research report.
