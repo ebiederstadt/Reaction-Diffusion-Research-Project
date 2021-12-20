@@ -73,7 +73,7 @@ def write_kernel_multispecies(s1_kernel: Kernel, s2_kernel: Kernel) -> int:
         # Write the s2 kernel
         s2_params = create_params(s2_kernel, id)
         cursor.execute(
-            """INSERT INTO s1_info(info_id, activator_amplitude, activator_distance, activator_width, inhibitor_amplitude, inhibitor_distance, inhibitor_width, integral_2d)
+            """INSERT INTO s2_info(info_id, activator_amplitude, activator_distance, activator_width, inhibitor_amplitude, inhibitor_distance, inhibitor_width, integral_2d)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             s2_params,
         )
