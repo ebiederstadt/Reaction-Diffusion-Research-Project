@@ -400,7 +400,9 @@ class MultiSpeciesWindow(QMainWindow):
     def start_or_start_calculation(self):
         if self.calculate_button.text() == "Begin Calculation":
             self.calculate_button.setText("Stop Calculation")
-            self.interval = SetInterval(0.5, self.calculate_stimulation_received)
+            self.interval = SetInterval(
+                c.ANIMATION_RATE, self.calculate_stimulation_received
+            )
         else:
             self.calculate_button.setText("Begin Calculation")
             self.interval.cancel()
