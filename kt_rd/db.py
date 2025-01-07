@@ -5,7 +5,7 @@ import os
 import argparse
 import logging
 
-from kernel_helpers import Kernel
+from kt_rd.kernel_helpers import Kernel
 
 logger = logging.getLogger("kt-reaction-diffusion")
 

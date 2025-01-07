@@ -6,7 +6,7 @@ from numba import njit
 from scipy.fft import dct
 from scipy.integrate import simpson
 
-import constants as c
+import kt_rd.constants as c
 
 logger = logging.getLogger("kt-reaction-diffusion")
 

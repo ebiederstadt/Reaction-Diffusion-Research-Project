@@ -22,11 +22,11 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-import constants as c
-from interval import SetInterval
-from kernel_helpers import Kernel, compute_stimulation
-from image_processing import write_figures
-from widgets import DoubleSlider
+import kt_rd.constants as c
+from kt_rd.interval import SetInterval
+from kt_rd.kernel_helpers import Kernel, compute_stimulation
+from kt_rd.image_processing import write_figures
+from kt_rd.widgets import DoubleSlider
 
 logger = logging.getLogger("kt-reaction-diffusion")
 

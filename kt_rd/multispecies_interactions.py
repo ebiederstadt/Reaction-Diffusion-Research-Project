@@ -21,10 +21,10 @@ from PyQt5.QtWidgets import (
     QPushButton,
 )
 
-import constants as c
-from db import write_kernel_multispecies
-from interval import SetInterval
-from kernel_helpers import Kernel, ConstantKernel, compute_stimulation
+import kt_rd.constants as c
+from kt_rd.db import write_kernel_multispecies
+from kt_rd.interval import SetInterval
+from kt_rd.kernel_helpers import Kernel, ConstantKernel, compute_stimulation
 
 logger = logging.getLogger("kt-reaction-diffusion")
 
