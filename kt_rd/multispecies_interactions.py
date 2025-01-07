@@ -456,5 +456,5 @@ class MultiSpeciesWindow(QMainWindow):
         plt.close(species1_fig)
         species2_fig, species2_ax = plt.subplots()
         self._plot_species(species2_ax, 2)
-        species2_fig.savefig(os.path.join(path, f"species_2.png"))
+        species2_fig.savefig(os.path.join(path, "species_2.png"))
         plt.close(species2_fig)

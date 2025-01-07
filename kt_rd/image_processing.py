@@ -24,7 +24,7 @@ def save_rd_matrix(kt_matrix: np.ndarray, path: str):
     fig, ax = plt.subplots()
     ax.imshow(resized_matrix, interpolation="none")
     ax.set_title("Reaction Diffusion Result")
-    fig.savefig(os.path.join(path, f"reaction_diffusion_result.png"))
+    fig.savefig(os.path.join(path, "reaction_diffusion_result.png"))
     plt.close(fig)
 
     # Save a copy for use for heatmaps and whatnot
