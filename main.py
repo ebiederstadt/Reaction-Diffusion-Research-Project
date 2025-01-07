@@ -6,8 +6,8 @@ import sys
 
 from matplotlib.backends.qt_compat import QtWidgets
 
-from singlespecies_interactions import KTMethod
-from multispecies_interactions import MultiSpeciesWindow
+from kt_rd.singlespecies_interactions import KTMethod
+from kt_rd.multispecies_interactions import MultiSpeciesWindow
 
 
 def setup_logging():

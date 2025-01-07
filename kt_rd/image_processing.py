@@ -3,9 +3,9 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-import constants as c
-from db import write_kernel
-from kernel_helpers import Kernel
+import kt_rd.constants as c
+from kt_rd.db import write_kernel
+from kt_rd.kernel_helpers import Kernel
 
 
 def write_figures(kt_matrix: np.ndarray, kernel: Kernel):
