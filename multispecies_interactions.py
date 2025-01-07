@@ -1,6 +1,5 @@
 from enum import Enum
 import os
-import sys
 from time import perf_counter
 from typing import Optional
 import logging
@@ -120,7 +119,7 @@ class MultiSpeciesWindow(QMainWindow):
         # Interactions between s1 and the environment
         self.s1_environment = ConstantKernel(np.ones(c.KERNEL_ELEMS))
 
-        # Interations between s2 and the environment
+        # Interactions between s2 and the environment
         self.s2_environment = ConstantKernel(np.ones(c.KERNEL_ELEMS))
 
         self.s1_s2 = Kernel()  # The effect of s1 on s2
@@ -459,10 +458,3 @@ class MultiSpeciesWindow(QMainWindow):
         self._plot_species(species2_ax, 2)
         species2_fig.savefig(os.path.join(path, f"species_2.png"))
         plt.close(species2_fig)
-
-
-if __name__ == "__main__":
-    qapp = QtWidgets.QApplication(sys.argv)
-    app = MultiSpeciesWindow()
-    app.show()
-    qapp.exec_()
