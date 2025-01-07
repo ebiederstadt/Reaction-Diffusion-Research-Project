@@ -3,12 +3,12 @@ import os
 import sys
 from time import perf_counter
 from typing import Optional
+import logging
 
 import matplotlib.colors as colors
 import matplotlib.patches as patches
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-from numba.core.targetconfig import Option
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -26,6 +26,8 @@ import constants as c
 from db import write_kernel_multispecies
 from interval import SetInterval
 from kernel_helpers import Kernel, ConstantKernel, compute_stimulation
+
+logger = logging.getLogger("kt-reaction-diffusion")
 
 
 class KernelChoices(Enum):
@@ -423,7 +425,7 @@ class MultiSpeciesWindow(QMainWindow):
         self.s1_matrix = self.s1_matrix * c.DECAY_RATE + s1_stimulation_matrix / 100
         self.s2_matrix = self.s2_matrix * c.DECAY_RATE + s2_stimulation_matrix / 100
         end = perf_counter()
-        print(f"Simulation took {end - start} seconds")
+        logger.debug(f"Simulation took {end - start} seconds")
 
         self.ax0.cla()
         self.ax3.cla()

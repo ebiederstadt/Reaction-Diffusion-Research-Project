@@ -1,12 +1,14 @@
 from dataclasses import dataclass
+import logging
 
 import numpy as np
 from numba import njit
-from numpy.lib.function_base import diff
 from scipy.fft import dct
 from scipy.integrate import simpson
 
 import constants as c
+
+logger = logging.getLogger("kt-reaction-diffusion")
 
 
 @dataclass
@@ -79,13 +81,10 @@ class Kernel:
     def update_cache(self):
         for p in range(-c.KERNEL_SIZE, c.KERNEL_SIZE + 1):
             for q in range(-c.KERNEL_SIZE, c.KERNEL_SIZE + 1):
-                distance = np.sqrt(p ** 2 + q ** 2)
-                self.cache[
-                    self._index(p + c.KERNEL_SIZE, q + c.KERNEL_SIZE)
-                ] = self.activator.compute_at_given_distance(
-                    distance
-                ) + self.inhibitor.compute_at_given_distance(
-                    distance
+                distance = np.sqrt(p**2 + q**2)
+                self.cache[self._index(p + c.KERNEL_SIZE, q + c.KERNEL_SIZE)] = (
+                    self.activator.compute_at_given_distance(distance)
+                    + self.inhibitor.compute_at_given_distance(distance)
                 )
 
     def update_activator(self, amplitude: float, distance: float, width: float):
@@ -95,7 +94,7 @@ class Kernel:
         self.integrate()
         self.fourier = self.compute_fourier()
 
-        print(f"2D Integral of Kernel: {self.compute_2d_integral()}")
+        logger.info(f"2D Integral of Kernel: {self.compute_2d_integral()}")
 
     def partial_update_activator(self, amplitude: float, distance: float, width: float):
         self.activator.update(amplitude, distance, width)
@@ -108,7 +107,7 @@ class Kernel:
         self.integrate()
         self.fourier = self.compute_fourier()
 
-        print(f"2D Integral of Kernel: {self.compute_2d_integral()}")
+        logger.info(f"2D Integral of Kernel: {self.compute_2d_integral()}")
 
     def parital_update_inhibitor(self, amplitude: float, distance: float, width: float):
         self.inhibitor.update(amplitude, distance, width)
@@ -124,7 +123,7 @@ class Kernel:
 def compute_stimulation(kernel_cache: np.ndarray, kt_matrix: np.ndarray):
     """This method is JIT compiled to machine code, and runs much faster as a result"""
 
-    stimulation_matrix = np.zeros(c.MATRIX_SIZE ** 2)
+    stimulation_matrix = np.zeros(c.MATRIX_SIZE**2)
     kernel_width = c.KERNEL_SIZE * 2
     indexMat = 0
     for j in range(c.MATRIX_SIZE):

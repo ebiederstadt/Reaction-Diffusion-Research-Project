@@ -1,6 +1,11 @@
 from enum import Enum
-import sys
+import logging.handlers
 from time import perf_counter
+import logging
+import logging.config
+from pathlib import Path
+import sys
+import json
 
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -25,6 +30,15 @@ from interval import SetInterval
 from kernel_helpers import Kernel, compute_stimulation
 from image_processing import write_figures
 from widgets import DoubleSlider
+
+logger = logging.getLogger("kt-reaction-diffusion")
+
+
+def setup_logging():
+    config_file = Path("logging_configs/config.json")
+    with open(config_file) as file:
+        config = json.load(file)
+    logging.config.dictConfig(config)
 
 
 class UpdateOptions(Enum):
@@ -284,7 +298,7 @@ class KTMethod(QMainWindow):
         text = self.activator_textbox.text()
         try:
             amplitude, width, distance = [float(x) for x in text.split(",")]
-            print(f"Update activator with params: {amplitude, distance, width}")
+            logger.info(f"Update activator with params: {amplitude, distance, width}")
             if self.kernel.activator.diff(amplitude, width, distance):
                 self.kernel.update_activator(amplitude, distance, width)
                 self.ax1.cla()
@@ -383,12 +397,12 @@ class KTMethod(QMainWindow):
             c.MAX_STIMULATION,
             out=stimulation_matrix,
         )
-        print(
+        logger.debug(
             f"stimulation max: {stimulation_matrix.max()} min: {stimulation_matrix.min()}, mean: {stimulation_matrix.mean()}"
         )
         self.kt_matrix = self.kt_matrix * c.DECAY_RATE + stimulation_matrix / 100
         end = perf_counter()
-        print(f"Simulation took {end - start} seconds")
+        logger.debug(f"Simulation took {end - start} seconds")
 
         self.ax0.cla()
         self._plot_kt_matrix()
@@ -399,6 +413,8 @@ class KTMethod(QMainWindow):
 
 
 if __name__ == "__main__":
+    setup_logging()
+
     qapp = QtWidgets.QApplication(sys.argv)
     app = KTMethod()
     app.show()

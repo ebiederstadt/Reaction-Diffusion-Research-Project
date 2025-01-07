@@ -3,8 +3,11 @@
 import sqlite3
 import os
 import argparse
+import logging
 
 from kernel_helpers import Kernel
+
+logger = logging.getLogger("kt-reaction-diffusion")
 
 
 def write_kernel(kernel: Kernel) -> int:
@@ -104,10 +107,10 @@ if __name__ == "__main__":
     try:
         id = int(input("Enter the row ID to delete: "))
     except ValueError:
-        print("Invalid input")
+        logger.warning("Invalid input")
     if args.db.lower() == "single":
         delete(id)
     elif args.db.lower() == "multi":
-        print("FIXME")
+        logger.error("FIXME")
     else:
-        print("Invalid Input")
+        logger.error("Invalid Input")
