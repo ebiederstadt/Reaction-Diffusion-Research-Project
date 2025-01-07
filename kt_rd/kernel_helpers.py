@@ -5,6 +5,7 @@ import numpy as np
 from numba import njit
 from scipy.fft import dct
 from scipy.integrate import simpson
+from scipy.interpolate import CubicSpline
 
 import kt_rd.constants as c
 
@@ -76,6 +77,13 @@ class Kernel:
 
     def compute_fourier(self):
         yf = dct(self.kernel)
+
+        # Compute a smoothed version of this function, for use in plotting
+        xf = np.linspace(0, 50)
+        f = CubicSpline(xf, yf)
+        self.x_smooth = np.linspace(0, 50, 200)
+        self.y_smooth = f(self.x_smooth)
+
         return yf
 
     def update_cache(self):
