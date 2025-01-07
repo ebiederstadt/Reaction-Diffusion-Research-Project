@@ -280,7 +280,7 @@ class KTMethod(QMainWindow):
         self.ax1.legend()
 
         self.ax2.grid(True)
-        self.ax2.plot(self.kernel.fourier)
+        self.ax2.plot(self.kernel.x_smooth, self.kernel.y_smooth)
         self.ax2.set_title("Fourier Transform of Kernel")
         self.ax2.set_xlim(0, c.KERNEL_SIZE)
 
