@@ -1,13 +1,7 @@
-from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import (
-    QHBoxLayout,
     QSlider,
-    QStyle,
-    QStyleOptionSlider,
-    QVBoxLayout,
-    QWidget,
 )
-from PyQt5.QtCore import QPoint, QRect, pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal
 
 
 class DoubleSlider(QSlider):
@@ -16,7 +10,7 @@ class DoubleSlider(QSlider):
 
     def __init__(self, orientation, *args, **kargs):
         super(DoubleSlider, self).__init__(orientation, *args, **kargs)
-        self._multi = 10 ** 3
+        self._multi = 10**3
 
         self.valueChanged.connect(self.emitDoubleValueChanged)
 
